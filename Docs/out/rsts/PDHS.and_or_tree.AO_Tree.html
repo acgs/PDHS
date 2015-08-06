@@ -129,11 +129,25 @@
 </table>
 </dd></dl>
 
+<dl class="method">
+<dt id="PDHS.and_or_tree.AO_Tree.Node.size">
+<code class="descname">size</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Node.size"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Node.size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the memory this Node is using.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="class">
 <dt id="PDHS.and_or_tree.AO_Tree.OR_Node">
-<em class="property">class </em><code class="descclassname">PDHS.and_or_tree.AO_Tree.</code><code class="descname">OR_Node</code><span class="sig-paren">(</span><em>parent: PDHS.and_or_tree.AO_Tree.Node=None</em>, <em>children: list=[]</em>, <em>upper_bound: float=0.0</em>, <em>lower_bound: float=0.0</em>, <em>belief_state: list=[]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#OR_Node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.OR_Node" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">PDHS.and_or_tree.AO_Tree.</code><code class="descname">OR_Node</code><span class="sig-paren">(</span><em>parent: PDHS.and_or_tree.AO_Tree.Node=None</em>, <em>children: list=[]</em>, <em>upper_bound: float=0.0</em>, <em>lower_bound: float=0.0</em>, <em>belief_state: list=[]</em>, <em>reach_probability: float=0.0</em>, <em>obs_prob: float=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#OR_Node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.OR_Node" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#PDHS.and_or_tree.AO_Tree.Node" title="PDHS.and_or_tree.AO_Tree.Node"><code class="xref py py-class docutils literal"><span class="pre">PDHS.and_or_tree.AO_Tree.Node</span></code></a></p>
 <p>Subclass Node to include belief state.</p>
 <p>OR_Nodes include a belief state.</p>
@@ -141,7 +155,12 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>belief_state</strong> (<em>list[float]</em>) &#8211; the belief state of this node. len(<cite>belief_state</cite>) must be the same as the number of states in the POMDP.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>belief_state</strong> (<em>list[float]</em>) &#8211; the belief state of this node. len(<cite>belief_state</cite>) must be the same as the number of states in the POMDP.</li>
+<li><strong>reach_probability</strong> (<em>float</em>) &#8211; the probability that the <cite>belief_state</cite> of this OR_Node is reached from the initial belief state.</li>
+<li><strong>obs_prob</strong> (<em>float</em>) &#8211; the probability of the observation that gave rise to this OR_Node.</li>
+</ul>
+</td>
 </tr>
 </tbody>
 </table>
@@ -232,6 +251,21 @@ for node in self.fringe:</p>
 <li><strong>S</strong> (<em>list[str]</em>) &#8211; The states of the POMDP.</li>
 </ul>
 </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PDHS.and_or_tree.AO_Tree.Tree.size">
+<code class="descname">size</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Tree.size"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the size of this Tree.</p>
+<p>Returns the sum of the sizes of the nodes in this tree, plus the actions and observations.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>

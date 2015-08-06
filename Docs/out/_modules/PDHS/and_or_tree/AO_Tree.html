@@ -40,6 +40,7 @@
   <h1>Source code for PDHS.and_or_tree.AO_Tree</h1><div class="highlight"><pre>
 <span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;Victor Szczepanski&#39;</span>
 
+<span class="kn">import</span> <span class="nn">sys</span>
 
 <div class="viewcode-block" id="Tree"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Tree">[docs]</a><span class="k">class</span> <span class="nc">Tree</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Represent an AND/OR Tree.</span>
@@ -62,6 +63,27 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">observations</span> <span class="o">=</span> <span class="n">observations</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fringe</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">]</span>
 
+<div class="viewcode-block" id="Tree.size"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Tree.size">[docs]</a>    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calculate the size of this Tree.</span>
+
+<span class="sd">        Returns the sum of the sizes of the nodes in this tree, plus the actions and observations.</span>
+
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c"># iterate over nodes from root, using a stack</span>
+        <span class="n">node_stack</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">]</span>
+        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">node_stack</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="n">node_stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="sd">&quot;&quot;&quot;:type : Node&quot;&quot;&quot;</span>
+            <span class="n">size</span> <span class="o">+=</span> <span class="n">n</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">n</span><span class="o">.</span><span class="n">children</span><span class="p">:</span>
+                <span class="n">node_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
+
+        <span class="n">size</span> <span class="o">+=</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">actions</span><span class="p">)</span> <span class="o">+</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">observations</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">size</span>
+
+</div>
 <div class="viewcode-block" id="Tree.expand"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Tree.expand">[docs]</a>    <span class="k">def</span> <span class="nf">expand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">O</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">T</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">S</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
         <span class="sd">r&quot;&quot;&quot;Expand a given node in this tree.</span>
 
@@ -109,23 +131,42 @@
 
         <span class="c"># for each new AND_Node, create an OR_Node and compute its belief state according to:</span>
         <span class="c"># b_t(s&#39;) = \tau(b_{t-1}, a_{t-1}, z_t)(s&#39;) = \frac{1}{Pr(z_t | b_{t-1}, a_{t-1})} * O(s&#39;, a_{t-1}, z_t) \Sum_{s \in S} T(s, a_{t-1}, s&#39;)b_{t-1}(s)</span>
-        <span class="k">for</span> <span class="n">and_child</span> <span class="ow">in</span> <span class="n">and_children</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">observation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">observations</span><span class="p">:</span>
-                <span class="c">#compute belief state</span>
-                <span class="n">belief_state</span> <span class="o">=</span> <span class="mi">0</span>
-                <span class="n">normalizing_factor</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">and_child</span> <span class="ow">in</span> <span class="n">and_children</span><span class="p">:</span> <span class="c">#iterate over all new AND_Nodes.</span>
+            <span class="n">a</span> <span class="o">=</span> <span class="n">and_child</span><span class="o">.</span><span class="n">action</span>
+            <span class="k">for</span> <span class="n">observation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">observations</span><span class="p">:</span>  <span class="c"># this generates each child of the and_child</span>
+                <span class="n">b_t</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">b_t_minusone</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">belief_state</span>  <span class="c"># b_t and b_t_minusone are vectors of probabilities, indexed by state.</span>
                 <span class="k">for</span> <span class="n">s_prime</span> <span class="ow">in</span> <span class="n">S</span><span class="p">:</span>
-                    <span class="n">new_observation</span> <span class="o">=</span> <span class="n">O</span><span class="p">[</span><span class="n">s_prime</span><span class="p">][</span><span class="n">action</span><span class="p">][</span><span class="n">observation</span><span class="p">]</span> <span class="c"># TODO: In Shun&#39;s proposed model, O takes 4 parameters - s (current state) is also required.</span>
-                    <span class="n">transition_prob</span> <span class="o">=</span> <span class="mi">0</span>
-                    <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">S</span><span class="p">:</span>
-                        <span class="n">transition_prob</span> <span class="o">+=</span> <span class="n">T</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">action</span><span class="p">][</span><span class="n">s_prime</span><span class="p">]</span> <span class="o">*</span> <span class="n">node</span><span class="o">.</span><span class="n">belief_state</span>
-                    <span class="n">normalizing_factor</span> <span class="o">+=</span> <span class="n">new_observation</span> <span class="o">*</span> <span class="n">transition_prob</span>
+                    <span class="c"># compute belief state point b_t(s&#39;)</span>
 
-                <span class="n">normalizing_factor</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="n">normalizing_factor</span>
+                    <span class="n">normalizing_factor</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="k">for</span> <span class="n">s_subprime</span> <span class="ow">in</span> <span class="n">S</span><span class="p">:</span>
+                        <span class="n">new_observation</span> <span class="o">=</span> <span class="n">O</span><span class="p">[</span><span class="n">s_subprime</span><span class="p">][</span><span class="n">action</span><span class="p">][</span><span class="n">observation</span><span class="p">]</span>  <span class="c"># TODO: In Shun&#39;s proposed model, O takes 4 parameters - s (current state) is also required.</span>
+                        <span class="n">transition_prob</span> <span class="o">=</span> <span class="mi">0</span>
+                        <span class="k">for</span> <span class="n">s_index</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">S</span><span class="p">):</span>
+                            <span class="n">transition_prob</span> <span class="o">+=</span> <span class="n">T</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">a</span><span class="p">][</span><span class="n">s_subprime</span><span class="p">]</span> <span class="o">*</span> <span class="n">b_t_minusone</span><span class="p">[</span><span class="n">s_index</span><span class="p">]</span>
+                        <span class="n">normalizing_factor</span> <span class="o">+=</span> <span class="n">new_observation</span> <span class="o">*</span> <span class="n">transition_prob</span>
 
+                    <span class="n">normalizing_factor</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="n">normalizing_factor</span>
+                    <span class="n">temp</span> <span class="o">=</span> <span class="n">normalizing_factor</span> <span class="o">*</span> <span class="n">O</span><span class="p">[</span><span class="n">s_prime</span><span class="p">][</span><span class="n">a</span><span class="p">][</span><span class="n">observation</span><span class="p">]</span>
+                    <span class="n">transition_sum</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="k">for</span> <span class="n">s_index</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">S</span><span class="p">):</span>
+                        <span class="n">transition_sum</span> <span class="o">+=</span> <span class="n">T</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">a</span><span class="p">][</span><span class="n">s_prime</span><span class="p">]</span> <span class="o">*</span> <span class="n">b_t_minusone</span><span class="p">[</span><span class="n">s_index</span><span class="p">]</span>
 
+                    <span class="n">b_t</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">temp</span> <span class="o">*</span> <span class="n">transition_sum</span><span class="p">)</span>
 
-                <span class="n">new_child</span> <span class="o">=</span> <span class="n">OR_Node</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">and_child</span><span class="p">,</span> <span class="n">belief_state</span><span class="o">=</span><span class="n">belief_state</span><span class="p">)</span>
+                <span class="c"># Pr(z | b,a) = \sum_{s&#39; in S} Pr(z|s&#39;,a) * \sum_{s in S} Pr(s&#39;|s,a)*b(s)</span>
+                <span class="n">obs_prob</span> <span class="o">=</span> <span class="mf">0.0</span>
+                <span class="k">for</span> <span class="n">s_prime</span> <span class="ow">in</span> <span class="n">S</span><span class="p">:</span>
+                    <span class="n">pr_z</span> <span class="o">=</span> <span class="n">O</span><span class="p">[</span><span class="n">s_prime</span><span class="p">][</span><span class="n">a</span><span class="p">][</span><span class="n">observation</span><span class="p">]</span>
+                    <span class="n">pr_s</span> <span class="o">=</span> <span class="mf">0.0</span>
+                    <span class="k">for</span> <span class="n">s_index</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">S</span><span class="p">):</span>
+                        <span class="n">pr_s</span> <span class="o">+=</span> <span class="n">T</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">a</span><span class="p">][</span><span class="n">s_prime</span><span class="p">]</span> <span class="o">*</span> <span class="n">b_t</span><span class="p">[</span><span class="n">s_index</span><span class="p">]</span>
+                    <span class="n">obs_prob</span> <span class="o">+=</span> <span class="n">pr_z</span> <span class="o">*</span> <span class="n">pr_s</span>
+                <span class="c"># probability of reaching new_child is the probability of reaching node * obs_prob</span>
+                <span class="n">new_child</span> <span class="o">=</span> <span class="n">OR_Node</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">and_child</span><span class="p">,</span> <span class="n">belief_state</span><span class="o">=</span><span class="n">b_t</span><span class="p">,</span> <span class="n">obs_prob</span><span class="o">=</span><span class="n">obs_prob</span><span class="p">,</span>
+                                    <span class="n">reach_probability</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">reach_probability</span><span class="o">*</span><span class="n">obs_prob</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fringe</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_child</span><span class="p">)</span>
 
 </div></div>
 <div class="viewcode-block" id="Node"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Node">[docs]</a><span class="k">class</span> <span class="nc">Node</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -154,7 +195,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">upper_bound</span> <span class="o">=</span> <span class="n">upper_bound</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lower_bound</span> <span class="o">=</span> <span class="n">lower_bound</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">depth</span> <span class="o">=</span> <span class="mi">0</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">_update_depth</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_as_child</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Node.add_as_child"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Node.add_as_child">[docs]</a>    <span class="k">def</span> <span class="nf">add_as_child</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Add this Node as a child to parent Node `node`.</span>
@@ -170,7 +215,9 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="n">node</span>
         <span class="sd">&quot;&quot;&quot;:type : Node&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_update_depth</span><span class="p">()</span>
 </div>
@@ -180,6 +227,22 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span>
 
+<div class="viewcode-block" id="Node.size"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Node.size">[docs]</a>    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calculate the memory this Node is using.</span>
+
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">size</span> <span class="o">+=</span> <span class="mi">8</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">)</span><span class="o">*</span><span class="mi">8</span> <span class="o">+</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">upper_bound</span><span class="p">)</span> <span class="o">+</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lower_bound</span><span class="p">)</span> <span class="o">+</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">depth</span><span class="p">)</span>
+        <span class="n">size</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_size</span><span class="p">()</span>  <span class="c"># hook for subclasses</span>
+        <span class="k">return</span> <span class="n">size</span>
+</div>
+    <span class="k">def</span> <span class="nf">_size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Hook for subclasses to account for size of additional attributes.</span>
+
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mi">0</span>
 </div>
 <div class="viewcode-block" id="OR_Node"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.OR_Node">[docs]</a><span class="k">class</span> <span class="nc">OR_Node</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Subclass Node to include belief state.</span>
@@ -188,16 +251,24 @@
 
 <span class="sd">    Args:</span>
 <span class="sd">        belief_state (list[float]): the belief state of this node. len(`belief_state`) must be the same as the number of states in the POMDP.</span>
-
+<span class="sd">        reach_probability (float): the probability that the `belief_state` of this OR_Node is reached from the initial belief state.</span>
+<span class="sd">        obs_prob (float): the probability of the observation that gave rise to this OR_Node.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">:</span> <span class="n">Node</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">children</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="p">[],</span> <span class="n">upper_bound</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">lower_bound</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">belief_state</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="p">[]):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">:</span> <span class="n">Node</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">children</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="p">[],</span> <span class="n">upper_bound</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">lower_bound</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                 <span class="n">belief_state</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="p">[],</span> <span class="n">reach_probability</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">obs_prob</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">Node</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">children</span><span class="p">,</span> <span class="n">upper_bound</span><span class="p">,</span> <span class="n">lower_bound</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">belief_state</span> <span class="o">=</span> <span class="n">belief_state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reach_probability</span> <span class="o">=</span> <span class="n">reach_probability</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obs_prob</span> <span class="o">=</span> <span class="n">obs_prob</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c"># the expand function of Tree will need to update value, since it depends on V.</span>
 
 <div class="viewcode-block" id="OR_Node.value"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.OR_Node.value">[docs]</a>    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">pass</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span>
 </div>
+    <span class="k">def</span> <span class="nf">_size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="n">elem</span><span class="p">)</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">belief_state</span><span class="p">])</span>
+
     <span class="k">def</span> <span class="nf">_update_depth</span><span class="p">(</span><span class="bp">self</span><span class="p">,):</span>
         <span class="sd">&quot;&quot;&quot;Implement _update_depth as `parent.depth` +1.</span>
 
@@ -221,10 +292,14 @@
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">children</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="p">[],</span> <span class="n">upper_bound</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">lower_bound</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">Node</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">children</span><span class="p">,</span> <span class="n">upper_bound</span><span class="p">,</span> <span class="n">lower_bound</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">action</span> <span class="o">=</span> <span class="n">action</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">successors</span> <span class="o">=</span> <span class="p">[]</span>
 
 <div class="viewcode-block" id="AND_Node.value"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.AND_Node.value">[docs]</a>    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">pass</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">([</span><span class="n">child</span><span class="o">.</span><span class="n">value</span><span class="p">()</span> <span class="o">*</span> <span class="n">child</span><span class="o">.</span><span class="n">obs_prob</span> <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">children</span><span class="p">])</span>
 </div>
+    <span class="k">def</span> <span class="nf">_size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">action</span><span class="p">)</span>
+
     <span class="k">def</span> <span class="nf">_update_depth</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Implement _update_depth as `parent.depth` + 0.</span>
 

@@ -38,6 +38,49 @@
             
   <div class="section" id="module-PDHS.and_or_tree.AOstar_Search">
 <span id="pdhs-and-or-tree-aostar-search-module"></span><h1>PDHS.and_or_tree.AOstar_Search module<a class="headerlink" href="#module-PDHS.and_or_tree.AOstar_Search" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="PDHS.and_or_tree.AOstar_Search.AOStarSearcher">
+<em class="property">class </em><code class="descclassname">PDHS.and_or_tree.AOstar_Search.</code><code class="descname">AOStarSearcher</code><span class="sig-paren">(</span><em>expand_heuristic</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AOstar_Search.html#AOStarSearcher"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AOstar_Search.AOStarSearcher" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>The AO* search strategy.</p>
+<p>An AO* search strategy uses a heuristic to pick the next node in an <cite>AO_Tree</cite>&#8216;s fringe for expansion.</p>
+<p>The main interface is through the <cite>forward_search</cite> method. This will build an <cite>AO_Tree</cite> and search it until
+some condition is met - subclasses may define their own stopping conditions.</p>
+<dl class="method">
+<dt id="PDHS.and_or_tree.AOstar_Search.AOStarSearcher.forward_search">
+<code class="descname">forward_search</code><span class="sig-paren">(</span><em>initial_belief_state: list</em>, <em>S: list</em>, <em>O: dict</em>, <em>T: dict</em>, <em>V</em>, <em>upper_bound_function</em>, <em>stopping_function</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AOstar_Search.html#AOStarSearcher.forward_search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AOstar_Search.AOStarSearcher.forward_search" title="Permalink to this definition">¶</a></dt>
+<dd><p>Using an initial belief state <cite>initial_belief_state</cite>, build and search an <cite>AO_Tree</cite> by repeatedly selecting a node
+from the <cite>AO_Tree</cite>&#8216;s fringe based on <cite>expand_heuristic</cite>. Stops after meeting some stopping condition.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">We expect that the provided stopping condition is guaranteed to halt this search in finite steps.
+If the stopping condition fails to guarantee this, then <cite>forward_search</cite> may execute forever.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>initial_belief_state</strong> (<em>list[float]</em>) &#8211; a vector of probabilities that represent the initial belief state of the agent.</li>
+<li><strong>S</strong> (<em>list[str]</em>) &#8211; the states of the POMDP</li>
+<li><strong>O</strong> (<em>dict[str, dict[str, dict[str, float]]]</em>) &#8211; The probability function that the agent makes an observation w given an action a and next state s&#8217;.</li>
+<li><strong>T</strong> (<em>dict[str, dict[str, dict[str, float]]]</em>) &#8211; The probability function that the system changes from state s to state s&#8217; given an action a.</li>
+<li><strong>stopping_function</strong> (<em>function</em>) &#8211; A function reference that takes a single argument of type <cite>Tree</cite> and returns a Bool that represents whether to stop the forward search or not.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The state of the AO_Tree when the stopping condition was met.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="PDHS.and_or_tree.AO_Tree.html#module-PDHS.and_or_tree.AO_Tree" title="PDHS.and_or_tree.AO_Tree">AO_Tree</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 

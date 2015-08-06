@@ -7,6 +7,7 @@ Subpackages
 .. toctree::
 
     PDHS.Heuristics
+    PDHS.Models
     PDHS.and_or_tree
 
 Submodules

@@ -38,6 +38,52 @@
             
   <div class="section" id="module-PDHS.pdhs">
 <span id="pdhs-pdhs-module"></span><h1>PDHS.pdhs module<a class="headerlink" href="#module-PDHS.pdhs" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="PDHS.pdhs.main">
+<code class="descclassname">PDHS.pdhs.</code><code class="descname">main</code><span class="sig-paren">(</span><em>input_filename: str</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/pdhs.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.pdhs.main" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="PDHS.pdhs.policy_driven_heuristic_search">
+<code class="descclassname">PDHS.pdhs.</code><code class="descname">policy_driven_heuristic_search</code><span class="sig-paren">(</span><em>pomdp</em>, <em>T</em>, <em>S</em>, <em>O</em>, <em>beta: float=0.0</em>, <em>epsilon: float=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/pdhs.html#policy_driven_heuristic_search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.pdhs.policy_driven_heuristic_search" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implement Hansen&#8217;s heuristic search algorithm.</p>
+<p>We ignore step 1., since we get the finite-state controller and epsilon as arguments.
+2. Compute V for P.
+3. a) Forward search from starting belief state
+3. b) If error bound (difference of upper and lower bound) &lt;= epsilon, exit
+3. c) Consider all reachable nodes in search tree that have lower bound improved, from leaves to root:</p>
+<blockquote>
+<div>3. c) i. If action and successor links are same as a machine state in <cite>P</cite>, keep it in P&#8217;.
+3. c) ii. Else if vector for this node pointwise dominates some state in <cite>P</cite>, change state in <cite>P</cite> to have the same action and successor links as this node.
+3. c) iii. Else add state to P&#8217; that has action and successor links as this node.</div></blockquote>
+<ol class="arabic simple" start="3">
+<li><ol class="first loweralpha" start="4">
+<li>Prune any state in P&#8217; that is not reachable from state that optimizes starting belief</li>
+</ol>
+</li>
+<li>Set P = P&#8217;. If 3. c) ii. changed a state, goto 2. Else goto 3.</li>
+</ol>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>P</strong> &#8211; </li>
+<li><strong>T</strong> &#8211; </li>
+<li><strong>S</strong> &#8211; </li>
+<li><strong>O</strong> &#8211; </li>
+<li><strong>beta</strong> &#8211; </li>
+<li><strong>epsilon</strong> &#8211; </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </div>
 
 
