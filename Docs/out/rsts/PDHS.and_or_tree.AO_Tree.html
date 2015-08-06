@@ -1,0 +1,296 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>PDHS.and_or_tree.AO_Tree module &mdash; PDHS 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="PDHS 0.1 documentation" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-PDHS.and_or_tree.AO_Tree">
+<span id="pdhs-and-or-tree-ao-tree-module"></span><h1>PDHS.and_or_tree.AO_Tree module<a class="headerlink" href="#module-PDHS.and_or_tree.AO_Tree" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="PDHS.and_or_tree.AO_Tree.AND_Node">
+<em class="property">class </em><code class="descclassname">PDHS.and_or_tree.AO_Tree.</code><code class="descname">AND_Node</code><span class="sig-paren">(</span><em>parent=None</em>, <em>children: list=[]</em>, <em>upper_bound: float=0.0</em>, <em>lower_bound: float=0.0</em>, <em>action: str=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#AND_Node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.AND_Node" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#PDHS.and_or_tree.AO_Tree.Node" title="PDHS.and_or_tree.AO_Tree.Node"><code class="xref py py-class docutils literal"><span class="pre">PDHS.and_or_tree.AO_Tree.Node</span></code></a></p>
+<p>Subclass Node to include action choice.</p>
+<p>AND_Nodes include an action choice.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>action</strong> (<em>str</em>) &#8211; the action choice for this AND_Node.</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="PDHS.and_or_tree.AO_Tree.AND_Node.value">
+<code class="descname">value</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#AND_Node.value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.AND_Node.value" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="PDHS.and_or_tree.AO_Tree.Node">
+<em class="property">class </em><code class="descclassname">PDHS.and_or_tree.AO_Tree.</code><code class="descname">Node</code><span class="sig-paren">(</span><em>parent=None</em>, <em>children: list=[]</em>, <em>upper_bound: float=0.0</em>, <em>lower_bound: float=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Node" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Represent a Node in an AO_Tree.</p>
+<p>Represent, in a general sense, a node of an AND/OR Tree. An AO_Tree is composed of Nodes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>parent</strong> (<a class="reference internal" href="#PDHS.and_or_tree.AO_Tree.Node" title="PDHS.and_or_tree.AO_Tree.Node"><em>Node</em></a>) &#8211; initial parent of this Node.</li>
+<li><strong>children</strong> (<em>list[Node]</em>) &#8211; initial list of children of this Node</li>
+<li><strong>upper_bound</strong> (<em>float</em>) &#8211; initial upper bound of this Node. upper_bound is updated when a new node is expanded in the AO_Tree.</li>
+<li><strong>lower_bound</strong> (<em>float</em>) &#8211; initial lower bound of this Node. lower_bound is updated when a new node is expanded in the AO_Tree.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="PDHS.and_or_tree.AO_Tree.Node.parent">
+<code class="descname">parent</code><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Node.parent" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Node</em></p>
+<p>the parent Node of this Node.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PDHS.and_or_tree.AO_Tree.Node.children">
+<code class="descname">children</code><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Node.children" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>list[Node]</em></p>
+<p>children of this Node.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PDHS.and_or_tree.AO_Tree.Node.upper_bound">
+<code class="descname">upper_bound</code><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Node.upper_bound" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em></p>
+<p>Upper bound for this Node. May be updated when a new node is expanded in the AO_Tree.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PDHS.and_or_tree.AO_Tree.Node.lower_bound">
+<code class="descname">lower_bound</code><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Node.lower_bound" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em></p>
+<p>Lower bound of this Node. May be updated when a new node is expanded in the AO_Tree.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PDHS.and_or_tree.AO_Tree.Node.depth">
+<code class="descname">depth</code><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Node.depth" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em></p>
+<p>current depth (measured from root) of this Node.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PDHS.and_or_tree.AO_Tree.Node.add_as_child">
+<code class="descname">add_as_child</code><span class="sig-paren">(</span><em>node</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Node.add_as_child"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Node.add_as_child" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add this Node as a child to parent Node <cite>node</cite>.</p>
+<p>This function removes this Node from its <cite>parent</cite>&#8216;s <cite>children</cite> list (if there is a parent) before setting this Node&#8217;s <cite>parent</cite> to <cite>node</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>node</strong> (<a class="reference internal" href="#PDHS.and_or_tree.AO_Tree.Node" title="PDHS.and_or_tree.AO_Tree.Node"><em>Node</em></a>) &#8211; the new parent of this Node.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="PDHS.and_or_tree.AO_Tree.OR_Node">
+<em class="property">class </em><code class="descclassname">PDHS.and_or_tree.AO_Tree.</code><code class="descname">OR_Node</code><span class="sig-paren">(</span><em>parent: PDHS.and_or_tree.AO_Tree.Node=None</em>, <em>children: list=[]</em>, <em>upper_bound: float=0.0</em>, <em>lower_bound: float=0.0</em>, <em>belief_state: list=[]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#OR_Node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.OR_Node" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#PDHS.and_or_tree.AO_Tree.Node" title="PDHS.and_or_tree.AO_Tree.Node"><code class="xref py py-class docutils literal"><span class="pre">PDHS.and_or_tree.AO_Tree.Node</span></code></a></p>
+<p>Subclass Node to include belief state.</p>
+<p>OR_Nodes include a belief state.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>belief_state</strong> (<em>list[float]</em>) &#8211; the belief state of this node. len(<cite>belief_state</cite>) must be the same as the number of states in the POMDP.</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="PDHS.and_or_tree.AO_Tree.OR_Node.value">
+<code class="descname">value</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#OR_Node.value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.OR_Node.value" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="PDHS.and_or_tree.AO_Tree.Tree">
+<em class="property">class </em><code class="descclassname">PDHS.and_or_tree.AO_Tree.</code><code class="descname">Tree</code><span class="sig-paren">(</span><em>root</em>, <em>actions: list=[]</em>, <em>observations: list=[]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Tree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Represent an AND/OR Tree.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>root</strong> (<a class="reference internal" href="#PDHS.and_or_tree.AO_Tree.OR_Node" title="PDHS.and_or_tree.AO_Tree.OR_Node"><em>OR_Node</em></a>) &#8211; the root node of this AND/OR Tree.</li>
+<li><strong>actions</strong> (<em>list[str]</em>) &#8211; the list of actions we can expand from an OR_Node.</li>
+<li><strong>observations</strong> (<em>list[str]</em>) &#8211; the list of observations we can expand from an AND_Node.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="PDHS.and_or_tree.AO_Tree.Tree.root">
+<code class="descname">root</code><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.root" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>OR_Node</em></p>
+<p>the root node of this AND/OR Tree.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PDHS.and_or_tree.AO_Tree.Tree.actions">
+<code class="descname">actions</code><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.actions" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>list[str]</em></p>
+<p>the list of actions we can expand from an OR_Node.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PDHS.and_or_tree.AO_Tree.Tree.observations">
+<code class="descname">observations</code><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.observations" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>list[str]</em></p>
+<p>the list of observations we can expand from an AND_Node.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PDHS.and_or_tree.AO_Tree.Tree.fringe">
+<code class="descname">fringe</code><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.fringe" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>list[OR_Node]</em></p>
+<p>The fringe nodes that can be chosen for expansion.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PDHS.and_or_tree.AO_Tree.Tree.expand">
+<code class="descname">expand</code><span class="sig-paren">(</span><em>node</em>, <em>O: dict</em>, <em>T: dict</em>, <em>S: list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Tree.expand"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.expand" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expand a given node in this tree.</p>
+<p>Expands a node as described in &#8220;Online Planning Algorithms for POMDPs&#8221; by Ross, Pineau, et. al, Journal of Artifical Intelligence Research 32, (2008), 663-704.</p>
+<p>In particular, implements the function</p>
+<div class="math">
+<p><img src="../_images/math/342f4292becee7f46a6c2eac231f586f4097d4ad.png" alt="b_t(s') = \tau(b_{t-1}, a_{t-1}, z_t)(s') = \frac{1}{Pr(z_t | b_{t-1}, a_{t-1})} * O(s', a_{t-1}, z_t)
+\sum_{s \in S} T(s, a_{t-1}, s')b_{t-1}(s)
+
+Pr(z | b, a) = \sum_{s' \in S} O(s', a, z) \sum_{s \in S} T(s, a, s')*b(s)"/></p>
+</div><p>Note that <cite>node</cite> is always an OR-node, because after we expand it to all actions (AND_Node),
+and then immediately expand the actions with every possible observation.</p>
+<dl class="docutils">
+<dt>..precondition::</dt>
+<dd>len(node.children) is 0</dd>
+<dt>..postcondition::</dt>
+<dd><p class="first">len(node.children) is not 0
+for node in self.fringe:</p>
+<blockquote class="last">
+<div>len(node.children) is 0</div></blockquote>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>node</strong> (<a class="reference internal" href="#PDHS.and_or_tree.AO_Tree.OR_Node" title="PDHS.and_or_tree.AO_Tree.OR_Node"><em>OR_Node</em></a>) &#8211; the node in this tree to expand.</li>
+<li><strong>O</strong> (<em>dict[str, dict[str, dict[str, float]]]</em>) &#8211; The observation function that maps a state to an action to an observation to a probability. Represents the conditional probability of observing w given state s and action a.</li>
+<li><strong>T</strong> (<em>dict[str, dict[str, dict[str, float]]]</em>) &#8211; The transition function that maps a state to an action to a state to a probability. Represents the conditional probability of transitioning from state s to s&#8217; given action a.</li>
+<li><strong>S</strong> (<em>list[str]</em>) &#8211; The states of the POMDP.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/rsts/PDHS.and_or_tree.AO_Tree.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Victor Szczepanski.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/rsts/PDHS.and_or_tree.AO_Tree.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

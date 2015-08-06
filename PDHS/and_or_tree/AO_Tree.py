@@ -23,16 +23,17 @@ class Tree(object):
         self.fringe = [self.root]
 
     def expand(self, node, O: dict, T: dict, S: list):
-        """Expand a given node in this tree.
+        r"""Expand a given node in this tree.
 
         Expands a node as described in "Online Planning Algorithms for POMDPs" by Ross, Pineau, et. al, Journal of Artifical Intelligence Research 32, (2008), 663-704.
 
         In particular, implements the function
 
         .. math::
-            b_t(s') = \\tau(b_{t-1}, a_{t-1}, z_t)(s') = \\frac{1}{Pr(z_t l b_{t-1}, a_{t-1})} * O(s', a_{t-1}, z_t) \Sum_{s \in S} T(s, a_{t-1}, s')b_{t-1}(s)
+            b_t(s') = \tau(b_{t-1}, a_{t-1}, z_t)(s') = \frac{1}{Pr(z_t | b_{t-1}, a_{t-1})} * O(s', a_{t-1}, z_t)
+            \sum_{s \in S} T(s, a_{t-1}, s')b_{t-1}(s)
 
-            Pr(z | b, a) = \Sum_{s' \in S} O(s', a, z) \Sum_{s \in S} T(s, a, s')*b(s)
+            Pr(z | b, a) = \sum_{s' \in S} O(s', a, z) \sum_{s \in S} T(s, a, s')*b(s)
 
         Note that `node` is always an OR-node, because after we expand it to all actions (AND_Node),
         and then immediately expand the actions with every possible observation.
@@ -68,21 +69,33 @@ class Tree(object):
 
         # for each new AND_Node, create an OR_Node and compute its belief state according to:
         # b_t(s') = \tau(b_{t-1}, a_{t-1}, z_t)(s') = \frac{1}{Pr(z_t | b_{t-1}, a_{t-1})} * O(s', a_{t-1}, z_t) \Sum_{s \in S} T(s, a_{t-1}, s')b_{t-1}(s)
-        for and_child in and_children:
-            for observation in self.observations:
-                #compute belief state
-                belief_state = 0
-                normalizing_factor = 0
+        for and_child in and_children: #iterate over all new AND_Nodes.
+
+            for observation in self.observations:  # this generates each child of the and_child
+                b_t = []
+                b_t_minusone = node.belief_state  # b_t and b_t_minusone are vectors of probabilities, indexed by state.
                 for s_prime in S:
-                    new_observation = O[s_prime][action][observation]
-                    transition_prob = 0
-                    for s in S:
-                        transition_prob += T[s][action][s_prime] * node.belief_state
-                    normalizing_factor += new_observation * transition_prob
+                    # compute belief state point b_t(s')
 
-                normalizing_factor = 1/normalizing_factor
+                    normalizing_factor = 0
+                    for s_subprime in S:
+                        new_observation = O[s_subprime][action][observation] # TODO: In Shun's proposed model, O takes 4 parameters - s (current state) is also required.
+                        transition_prob = 0
+                        for s_index, s in enumerate(S):
+                            transition_prob += T[s][action][s_subprime] * b_t_minusone[s_index]
+                        normalizing_factor += new_observation * transition_prob
 
-                new_child = OR_Node(parent=and_child, belief_state=belief_state)
+                    normalizing_factor = 1/normalizing_factor
+                    temp = normalizing_factor * O[s_prime][action][observation]
+                    transition_sum = 0
+                    for s_index, s in enumerate(S):
+                        transition_sum += T[s][action][s_prime] * b_t_minusone[s_index]
+
+                    b_t.append(temp * transition_sum)
+
+                new_child = OR_Node(parent=and_child, belief_state=b_t)
+                self.fringe.append(new_child)
+
 
 
 class Node(object):
