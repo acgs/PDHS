@@ -173,7 +173,7 @@
 
 <dl class="class">
 <dt id="PDHS.and_or_tree.AO_Tree.Tree">
-<em class="property">class </em><code class="descclassname">PDHS.and_or_tree.AO_Tree.</code><code class="descname">Tree</code><span class="sig-paren">(</span><em>root</em>, <em>actions: list=[]</em>, <em>observations: list=[]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Tree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">PDHS.and_or_tree.AO_Tree.</code><code class="descname">Tree</code><span class="sig-paren">(</span><em>root</em>, <em>upper_bound_function: Heuristics.Bounds.UpperBound</em>, <em>lower_bound_function: Heuristics.Bounds.LowerBound</em>, <em>actions: list=[]</em>, <em>observations: list=[]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Tree"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>Represent an AND/OR Tree.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -194,6 +194,20 @@
 <code class="descname">root</code><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.root" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>OR_Node</em></p>
 <p>the root node of this AND/OR Tree.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PDHS.and_or_tree.AO_Tree.Tree.U">
+<code class="descname">U</code><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.U" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>UpperBound</em></p>
+<p>the upper bound function to use for fringe nodes</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PDHS.and_or_tree.AO_Tree.Tree.L">
+<code class="descname">L</code><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.L" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>LowerBound</em></p>
+<p>the lower bound function to use for fringe nodes</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -257,6 +271,59 @@ for node in self.fringe:</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="PDHS.and_or_tree.AO_Tree.Tree.pr_z">
+<code class="descname">pr_z</code><span class="sig-paren">(</span><em>observation: str</em>, <em>belief_state: list</em>, <em>action: str</em>, <em>O: dict</em>, <em>T: dict</em>, <em>S: list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Tree.pr_z"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.pr_z" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implement the Pr(z | b, a) function.</p>
+<p>Implements the function:</p>
+<div class="math">
+<p><img src="../_images/math/bf008a33400804aaee7f3d9b001d3c34970b05b3.png" alt="Pr(z | b, a) = \sum_{s' \in S} O(s', a, z) \sum_{s \in S} T(s, a, s')*b(s)"/></p>
+</div><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>observation</strong> (<em>str</em>) &#8211; the observation z</li>
+<li><strong>belief_state</strong> (<em>list[float]</em>) &#8211; the belief state b</li>
+<li><strong>action</strong> (<em>str</em>) &#8211; the action a</li>
+<li><strong>O</strong> (<em>dict[str, dict[str, dict[str, float]]]</em>) &#8211; the observation probability function. Function of state, action, observation.</li>
+<li><strong>T</strong> (<em>dict[ str, dict[str, dict[str, float]]]</em>) &#8211; the state transition probability function. Function of state, action, state.</li>
+<li><strong>S</strong> (<em>list[str]</em>) &#8211; the state set.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the probability of observing <cite>observation</cite> given belief state <cite>belief_state</cite> and action <cite>action</cite>.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PDHS.and_or_tree.AO_Tree.Tree.propagate">
+<code class="descname">propagate</code><span class="sig-paren">(</span><em>fringe_nodes: list=[]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Tree.propagate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.propagate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Propagate upper and lower bound information to root.</p>
+<p>Updates upper and lower bounds for ancestors of nodes in <cite>fringe_nodes</cite>.</p>
+<p>And we propagate the upper bound as:</p>
+<div class="math">
+<p><img src="../_images/math/b178fcc4dead3b550edb154e852f10fed5451348.png" alt="U_T(b) = \begin{cases}U(b), &amp; \text{if } b \in F(T) \\ \text{max}_{a \in A} U_T(b,a), &amp; \text{otherwise}\end{cases}
+
+U_T(b,a) = R_B(b,a) + \gamma \sum_{z \in Z} \text{Pr}(z | b,a)U_T(\tau(b,a,z))"/></p>
+</div><p>In both cases, F(T) is the set of fringe nodes in tree T, U_T(b) and L_T(b) represent upper and lower bounds on V&#8217;(b) associated to belief state b,
+U_T(b,a) and L_T(b,a) represent corresponding bounds on Q*(b,a), and L(b) and U(b) are the bounds of the fringe nodes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fringe_nodes</strong> (<em>list[OR_Node]</em>) &#8211; the nodes on the fringe from which to start bound propagation.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="PDHS.and_or_tree.AO_Tree.Tree.size">
 <code class="descname">size</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Tree.size"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.size" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate the size of this Tree.</p>
@@ -266,6 +333,62 @@ for node in self.fringe:</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PDHS.and_or_tree.AO_Tree.Tree.tau">
+<code class="descname">tau</code><span class="sig-paren">(</span><em>node</em>, <em>action: str</em>, <em>observation: str</em>, <em>O: dict</em>, <em>T: dict</em>, <em>S: list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Tree.tau"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.tau" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implement the tau function for computing belief update.</p>
+<p>Implements the function:</p>
+<div class="math">
+<p><img src="../_images/math/4cc37241f67aaac714e210d7b006616bfdf7dd92.png" alt="\tau(b, a, z)(s') = \frac{1}{Pr(z | b, a)} * O(s', a, z)\sum_{s \in S} T(s, a, s')b(s)"/></p>
+</div><p>We won&#8217;t return a specific belief point, but the entire belief state:</p>
+<div class="math">
+<p><img src="../_images/math/82319988c87be43c8133bf667242310e3110b356.png" alt="\tau(b, a, z_t)"/></p>
+</div><p>So, we return a list indexed by states in <cite>S</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>node</strong> (<a class="reference internal" href="#PDHS.and_or_tree.AO_Tree.Node" title="PDHS.and_or_tree.AO_Tree.Node"><em>Node</em></a>) &#8211; the node containing belief state b</li>
+<li><strong>action</strong> (<em>str</em>) &#8211; the action a</li>
+<li><strong>observation</strong> (<em>str</em>) &#8211; the observation z</li>
+<li><strong>O</strong> (<em>dict[str, dict[str, dict[str, float]]]</em>) &#8211; the observation probability function. Function of state, action, observation.</li>
+<li><strong>T</strong> (<em>dict[str, dict[str, dict[str, float]]]</em>) &#8211; the transition probability function. Function of state, action, state.</li>
+<li><strong>S</strong> (<em>list[str]</em>) &#8211; list of states</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">the updated belief state, given b, a, and z.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list[float]</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PDHS.and_or_tree.AO_Tree.Tree.update_lower_bound">
+<code class="descname">update_lower_bound</code><span class="sig-paren">(</span><em>node</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Tree.update_lower_bound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.update_lower_bound" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the lower bound of <cite>node</cite>.</p>
+<p>We propagate the lower bounds of the fringe nodes up the tree with these equations:</p>
+<div class="math">
+<p><img src="../_images/math/2251bae5723b681a4348ef54e1519a50ce62dec4.png" alt="L_T(b) = \begin{cases} L(b), &amp; \text{if} b \in F(T) \\ \text{max}_{a \in A} L_T(b,a), &amp; \text{otherwise}\end{cases}
+
+L_T(b,a) = R_B(b,a) + \gamma \sum_{z \in Z} \text{Pr}(z | b,a)L_T(\tau(b,a,z))"/></p>
+</div><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>node</strong> &#8211; </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
 </tr>
 </tbody>
 </table>

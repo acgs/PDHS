@@ -1,3 +1,5 @@
+from Heuristics.Bounds import UpperBound, LowerBound
+
 __author__ = 'Victor Szczepanski'
 
 from PDHS.and_or_tree.AO_Tree import Tree, OR_Node
@@ -17,7 +19,8 @@ class AOStarSearcher(object):
     def __init__(self, expand_heuristic):
         self.expand_heuristic = expand_heuristic
 
-    def forward_search(self, initial_belief_state: list, S: list, O: dict, T: dict, V, upper_bound_function, stopping_function):
+    def forward_search(self, initial_belief_state: list, S: list, O: dict, T: dict, V: LowerBound,
+                       upper_bound_function: UpperBound, stopping_function):
         """
         Using an initial belief state `initial_belief_state`, build and search an `AO_Tree` by repeatedly selecting a node
         from the `AO_Tree`'s fringe based on `expand_heuristic`. Stops after meeting some stopping condition.
@@ -35,11 +38,12 @@ class AOStarSearcher(object):
         Returns:
             AO_Tree: The state of the AO_Tree when the stopping condition was met.
         """
-        tree = Tree(OR_Node(belief_state=initial_belief_state))
+        tree = Tree(OR_Node(belief_state=initial_belief_state), upper_bound_function=upper_bound_function, lower_bound_function=V)
         while not stopping_function(tree):
-            #select fringe node from tree using heuristic
-            expand_node = self.expand_heuristic.select(tree.fringe)
+            # select fringe node from tree using heuristic
+            expand_node = self.expand_heuristic.select(tree.fringe) #TODO: In Ross, Pineau, et al., they calculate next heuristic in the expand function. Maybe it is more efficient that way?
             tree.expand(expand_node, O, T, S)
             print("Current size of tree: {}".format(tree.size()))
+            # propagate upper and lower bounds
 
         return tree

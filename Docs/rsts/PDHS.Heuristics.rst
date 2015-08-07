@@ -6,6 +6,7 @@ Submodules
 
 .. toctree::
 
+   PDHS.Heuristics.Bounds
    PDHS.Heuristics.Heuristics
 
 Module contents

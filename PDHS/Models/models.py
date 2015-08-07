@@ -300,6 +300,236 @@ class Player(object):
             s.append(str(state_transition) + ' '.join(str(self.state_transitions[state_transition])))
         return '\n'.join(s)
 
+class ValueFunction(object):
+    """A POMDP Value Function.
+
+    Attributes:
+        alpha_vectors (list[list[float]]): a list of vectors representing the piecewise linear function of this Value Function.
+        actions (list[str]): a list of actions that match each alpha vector in `alpha_vectors`.
+
+    Preconditions:
+        len(`alpha_vectors`) == len(`actions`)
+
+    """
+
+    def __init__(self, alpha_vectors=[], actions=[], states=[]):
+        self.alpha_vectors = alpha_vectors
+        self.actions = actions
+        self.states = states
+
+    def from_Player(self, player: Player, pomdp):
+        """Build this Value Function from a `Player`'s automaton.
+
+        Note:
+            This function returns the updated player, but also modifies this player's `alpha_vectors`.
+            That is, this function does not create a new ValueFunction.
+
+        Args:
+            player (Player): The Player whose automaton represents the policy to build from.
+            pomdp (POMDPModel): The pomdp that contains information needed to generate a value function.
+        Returns:
+            ValueFunction: this value function.
+        """
+        K = np.array([k for k in player.state_machine.keys()], ndmin=1)
+        S = pomdp.states
+        self.states = S
+        """:type : list[str]"""
+        A = np.array(pomdp.actions, ndmin=1)
+
+        # set up matricies to use: V, R, T, O, and Π, and vectors a(k) and r^k.
+
+        a = {}
+        """:type : dict[str, str]
+        maps a state k to an action"""
+        for k in K:
+            a[k] = player.state_machine[k]
+
+        r = {}
+        """:type : dict[str, list[float]]
+        maps a state k to a list of payoffs, indexed by state index."""
+        for k in K:
+            r[k] = {}
+
+        for k in K:
+            payoff = []
+            for s in S:
+                payoff.append(float(pomdp.payoff[(a[k], s)]))
+            r[k] = payoff
+
+        R = np.hstack((r[k] for k in K))
+
+        T = self._make_T(S, K, a, state_transition=pomdp.state_transition)
+
+        O = self._make_O(A, S, K, a, observations=pomdp.observations,
+                         observation_probability=pomdp.observation_probability)
+
+        Pi = self._make_Pi(K, S, player, observations=pomdp.observations)
+
+        # V = (I−γTOΠ)^{−1}R
+        temp = np.multiply(float(pomdp.discount), T)  # multiply does scalar multiplication
+        temp = np.dot(temp, O)  # dot does matrix multiplication
+        temp = np.dot(temp, Pi)
+        temp = np.subtract(np.identity(temp.shape[0]), temp)  # we can use temp.shape[0], because it is square.
+        temp = np.linalg.inv(temp)
+        V = np.dot(temp, R)
+
+        # we'll split V up into sublists based on |S|: every |S| elements in V belong to one list.
+        temp = []
+
+        i = 0
+        while i < V.shape[1]:
+            t = []
+            z = 0
+            while z < (len(S)):
+                t.append(V[0, i])
+                i += 1
+                z += 1
+            temp.append(t)
+
+        V = temp
+        ak = [a[k] for k in K]
+        self.alpha_vectors = V
+        self.actions = ak
+        return self
+
+    def _make_T(self, S: list, K: list, a: dict, state_transition: list) -> np.array:
+        """Compute the conditional probability of state transition in POMDP.
+
+        T is an len(`S`)*len(`K`) x len(`S`)*len(`K`) dimensional block diagonal matrix of len(`K`) x len(`K`) blocks,
+        with T_a(k) as the kth diagonal sub-matrix. T_a(k) is the transition probability matrix when selecting action a(k).
+
+        Args:
+            S (list[str]): a list of states
+            K (list[str]): a list of player 1 state machine states.
+            a (dict[str,str]): a mapping from state to action.
+            state_transition (list[tuple[next_state, tuple[state, action], probability]: Set of
+        Returns:
+            np.array: mapping from action to 2-D array indexed
+            first by theta_t index and then by theta_t_plus_one index.
+        """
+        T_a = {}  # maps action to state to state to real
+        """:type : dict[str, np.array]
+        conditional probability of moving from one state to another given an action.
+        accessed as T_a[action][theta_t_index][theta_t_plus_one_index]"""
+
+        # self.state_transition.append((theta_t_plus_one, (theta_t, action), probability))
+        # Rearrange self.state_transition so we can index by action.
+        for (theta_t_plus_one, (theta_t, action), probability) in state_transition:
+            theta_t_index = S.index(theta_t)
+            theta_t_plus_one_index = S.index(theta_t_plus_one)
+            if action not in T_a:
+                T_a[action] = np.zeros((len(S), len(S)))
+
+            T_a[action][theta_t_index][theta_t_plus_one_index] = probability
+
+        #We'll make the sub-matricies ot give to T. They are |K| x |K| blocks, with T_a(k) as the kth diagonal submatrix
+        t_submatricies = []
+        """:type : list[np.array]"""
+        for k in K:
+            t_submatricies.append(T_a[a[k]])
+
+        T = block_diag(*t_submatricies)  # * black magic unpacks the t_submatricies list.
+        """:type : np.array"""
+        return T
+
+    def _make_O(self, A: list, S: list, K: list, a: dict, observations: list, observation_probability: dict) -> np.array:
+        """Compute the observation probability matrix.
+
+        Computes a 2-d matrix where the kth block, sth sub-block contains the sth row of O_a(k).
+
+        O_a(k) is a list of probabilities, indexed by `Z` (the observations), given action a(k).
+
+        Args:
+            A (list[str]): A list of actions
+            K (list[str]): A list of state machine states.
+            S (list[str]): A list of states
+            a (dict[str, str]): A mapping from machine state k to an action.
+            observations (list[str]): a list of observations
+            observation_probability (dict[str, dict[tuple[action, state], float]): the probability of observing w given action a and state s.
+        Returns:
+            np.array : a len(`S`)*len(`K`) x len(`Z`)*len(`S`)*len(`K`) dimensional block diagonal matrix.
+             The kth block, sth sub-block contains the sth row of O_a(k)
+        """
+        # Make O_a(k) - the observation probability indexed by actions
+        O_a = {}
+        for action in A:
+            if action not in O_a:
+                O_a[action] = []
+                for i in range(len(S)):
+                    O_a[action].append([])
+            for i, state in enumerate(S):
+                for j, observation in enumerate(observations):
+                    O_a[action][i].append(observation_probability[observation][(action, state)])
+
+        #First, we build the sub-blocks of size |S| x |S| from the |Z| vectors from O_a(k)
+        observation_subblocks = []
+        for k in K:
+            action = a[k]
+            for i, state in enumerate(S):
+                observation_subblocks.append(block_diag([float(o) for o in O_a[action][i]]))
+
+        # now, we have |K| * |K| diagonal block matricies that are diagonal block matricies of the observation_subblocks
+        O = block_diag(*observation_subblocks)  # * black magic unpacks the observation_subblocks list.
+
+        return O
+
+    def _make_Pi(self, K: list, S: list, player1: Player, observations: list) -> np.array:
+        """Compute the transition function of `player1`'s pre-FSA in matrix form.
+
+        Compute an len(`Z`)*len(`S`)*len(`K`) x len(`S`)*len(`K`) dimensional block matrix of len(`K`) x len(`K`) blocks.
+        Each block is a len(`Z`)*len(`S`) x len(`S`) block diagonal sub-matrix of len(`S`) x len(`S`) sub-blocks.
+        Each sub-block is a len(`Z`) vector.
+        Then, for all s, the zth component of the sth diagonal block of the (k1,k2) submatrix
+        is 1 if k2 is a successor of k1 given observation z in `player1`'s pre-FSA, else 0.
+
+        Args:
+            K (list[str]): a list of state machine states.
+            S (list[str]): a list of states
+            player1 (Player): the player whose pre-FSA should be used.
+            observations (list[str]): a list of observations
+
+        Returns:
+            np.array: an len(`Z`)*len(`S`)*len(`K`) x len(`S`)*len(`K`) dimensional block matrix
+            representing the transition function of `player1`'s pre-FSA.
+        """
+        # Pi is made of sub-matricies Pi_{k1,k2}.
+        # Each sub-matrix is made of |S| diagonal blocks (i.e. Pi_{k1,k2} is diagonal block matrix).
+        # Each diagonal block is made of a vector |Z|.
+        # The components of the vectors of size |Z| are 1 if k_2 is the next state of the FSA when the FSA is in k_1 and observes z. Otherwise 0.
+
+        # We build the submatricies for all s in S from the sub-matrix [(Pi_{k1,k2})_s]_z
+        pi_submatricies = {}
+
+
+        for k1, state2 in enumerate(K):
+            pi_submatricies[k1] = {}
+            for k2, state3 in enumerate(K):
+                #pi_submatricies[k1][k2] selects a Pi_{k1,k2}
+                subsubmatrix = []
+                for state in S:  # we don't use state here, because we're just collecting diagonal blocks.
+                    #pi_submatricies[k1][k2][s] selects a diagonal block
+                    diagonal_block = np.zeros((len(observations), 1))
+                    for z, observation in enumerate(observations):
+                        # z selects an element of pi_submatrices[k1][k2][s];pi_submatrices[k1][k2][s][z] is a real number.
+                        diagonal_block[z][0] = ((1 if player1.state_transitions[state2][observation] == state3 else 0))
+                    subsubmatrix.append(diagonal_block)
+                pi_submatricies[k1][k2] = block_diag(*subsubmatrix)
+
+        # we need to build a list of the submatricies to pass to np.bmat, and need to do it in column major order
+        pi = []
+        for k1 in range(len(K)):
+            sub_pi = []
+            for k2 in range(len(K)):
+              sub_pi.append(pi_submatricies[k2][k1])
+            pi.append(sub_pi)
+
+        Pi = np.bmat(pi)
+        return Pi
+
+    def to_Player(self):
+        """Construct a new Player from this Value Function.
+        """
+
 
 class GTModel(object):
     """Represent a Game Theory Model.
@@ -1056,193 +1286,8 @@ class POMDPModel(object):
 
                 A - the len(`S`) dimensional vector that lists the actions of each alpha vector in `V`.
         """
-        K = np.array([k for k in player1.state_machine.keys()], ndmin=1)
-        S = self.states
-        """:type : list[str]"""
-        A = np.array(self.actions, ndmin=1)
-
-        # set up matricies to use: V, R, T, O, and Π, and vectors a(k) and r^k.
-
-        a = {}
-        """:type : dict[str, str]
-        maps a state k to an action"""
-        for k in K:
-            a[k] = player1.state_machine[k]
-
-        r = {}
-        """:type : dict[str, list[float]]
-        maps a state k to a list of payoffs, indexed by state index."""
-        for k in K:
-            r[k] = {}
-
-        for k in K:
-            payoff = []
-            for s in S:
-                payoff.append(float(self.payoff[(a[k], s)]))
-            r[k] = payoff
-
-        R = np.hstack((r[k] for k in K))
-
-        T = self._make_T(S, K, a)
-
-        O = self._make_O(A, S, K, a)
-
-        Pi = self._make_Pi(K, S, player1)
-
-        # V = (I−γTOΠ)^{−1}R
-        temp = np.multiply(float(self.discount), T)  # multiply does scalar multiplication
-        temp = np.dot(temp, O)  # dot does matrix multiplication
-        temp = np.dot(temp, Pi)
-        temp = np.subtract(np.identity(temp.shape[0]), temp)  # we can use temp.shape[0], because it is square.
-        temp = np.linalg.inv(temp)
-        V = np.dot(temp, R)
-
-        # we'll split V up into sublists based on |S|: every |S| elements in V belong to one list.
-        temp = []
-
-        i = 0
-        while i < V.shape[1]:
-            t = []
-            z = 0
-            while z < (len(S)):
-                t.append(V[0, i])
-                i += 1
-                z += 1
-            temp.append(t)
-
-        V = temp
-        ak = [a[k] for k in K]
-        return V, ak
-
-    def _make_T(self, S: list, K: list, a: dict) -> np.array:
-        """Compute the conditional probability of state transition in POMDP.
-
-        T is an len(`S`)*len(`K`) x len(`S`)*len(`K`) dimensional block diagonal matrix of len(`K`) x len(`K`) blocks,
-        with T_a(k) as the kth diagonal sub-matrix. T_a(k) is the transition probability matrix when selecting action a(k).
-
-        Args:
-            S (list[str]): a list of states
-            K (list[str]): a list of player 1 state machine states.
-            a (dict[str,str]): a mapping from state to action.
-        Returns:
-            np.array: mapping from action to 2-D array indexed
-            first by theta_t index and then by theta_t_plus_one index.
-        """
-        T_a = {}  # maps action to state to state to real
-        """:type : dict[str, np.array]
-        conditional probability of moving from one state to another given an action.
-        accessed as T_a[action][theta_t_index][theta_t_plus_one_index]"""
-
-        # self.state_transition.append((theta_t_plus_one, (theta_t, action), probability))
-        # Rearrange self.state_transition so we can index by action.
-        for (theta_t_plus_one, (theta_t, action), probability) in self.state_transition:
-            theta_t_index = S.index(theta_t)
-            theta_t_plus_one_index = S.index(theta_t_plus_one)
-            if action not in T_a:
-                T_a[action] = np.zeros((len(S), len(S)))
-
-            T_a[action][theta_t_index][theta_t_plus_one_index] = probability
-
-        #We'll make the sub-matricies ot give to T. They are |K| x |K| blocks, with T_a(k) as the kth diagonal submatrix
-        t_submatricies = []
-        """:type : list[np.array]"""
-        for k in K:
-            t_submatricies.append(T_a[a[k]])
-
-        T = block_diag(*t_submatricies)  # * black magic unpacks the t_submatricies list.
-        """:type : np.array"""
-        return T
-
-    def _make_O(self, A: list, S: list, K: list, a: dict) -> np.array:
-        """Compute the observation probability matrix.
-
-        Computes a 2-d matrix where the kth block, sth sub-block contains the sth row of O_a(k).
-
-        O_a(k) is a list of probabilities, indexed by `Z` (the observations), given action a(k).
-
-        Args:
-            A (list[str]): A list of actions
-            K (list[str]): A list of state machine states.
-            S (list[str]): A list of states
-            a (dict[str, str]): A mapping from machine state k to an action.
-        Returns:
-            np.array : a len(`S`)*len(`K`) x len(`Z`)*len(`S`)*len(`K`) dimensional block diagonal matrix.
-             The kth block, sth sub-block contains the sth row of O_a(k)
-        """
-        # Make O_a(k) - the observation probability indexed by actions
-        O_a = {}
-        for action in A:
-            if action not in O_a:
-                O_a[action] = []
-                for i in range(len(S)):
-                    O_a[action].append([])
-            for i, state in enumerate(S):
-                for j, observation in enumerate(self.observations):
-                    O_a[action][i].append(self.observation_probability[observation][(action, state)])
-
-        #First, we build the sub-blocks of size |S| x |S| from the |Z| vectors from O_a(k)
-        observation_subblocks = []
-        for k in K:
-            action = a[k]
-            for i, state in enumerate(self.states):
-                observation_subblocks.append(block_diag([float(o) for o in O_a[action][i]]))
-
-        # now, we have |K| * |K| diagonal block matricies that are diagonal block matricies of the observation_subblocks
-        O = block_diag(*observation_subblocks)  # * black magic unpacks the observation_subblocks list.
-
-        return O
-
-    def _make_Pi(self, K: list, S: list, player1: Player) -> np.array:
-        """Compute the transition function of `player1`'s pre-FSA in matrix form.
-
-        Compute an len(`Z`)*len(`S`)*len(`K`) x len(`S`)*len(`K`) dimensional block matrix of len(`K`) x len(`K`) blocks.
-        Each block is a len(`Z`)*len(`S`) x len(`S`) block diagonal sub-matrix of len(`S`) x len(`S`) sub-blocks.
-        Each sub-block is a len(`Z`) vector.
-        Then, for all s, the zth component of the sth diagonal block of the (k1,k2) submatrix
-        is 1 if k2 is a successor of k1 given observation z in `player1`'s pre-FSA, else 0.
-
-        Args:
-            K (list[str]): a list of state machine states.
-            S (list[str]): a list of states
-            player1 (Player): the player whose pre-FSA should be used.
-
-        Returns:
-            np.array: an len(`Z`)*len(`S`)*len(`K`) x len(`S`)*len(`K`) dimensional block matrix
-            representing the transition function of `player1`'s pre-FSA.
-        """
-        # Pi is made of sub-matricies Pi_{k1,k2}.
-        # Each sub-matrix is made of |S| diagonal blocks (i.e. Pi_{k1,k2} is diagonal block matrix).
-        # Each diagonal block is made of a vector |Z|.
-        # The components of the vectors of size |Z| are 1 if k_2 is the next state of the FSA when the FSA is in k_1 and observes z. Otherwise 0.
-
-        # We build the submatricies for all s in S from the sub-matrix [(Pi_{k1,k2})_s]_z
-        pi_submatricies = {}
-
-
-        for k1, state2 in enumerate(K):
-            pi_submatricies[k1] = {}
-            for k2, state3 in enumerate(K):
-                #pi_submatricies[k1][k2] selects a Pi_{k1,k2}
-                subsubmatrix = []
-                for state in S:  # we don't use state here, because we're just collecting diagonal blocks.
-                    #pi_submatricies[k1][k2][s] selects a diagonal block
-                    diagonal_block = np.zeros((len(self.observations), 1))
-                    for z, observation in enumerate(self.observations):
-                        # z selects an element of pi_submatrices[k1][k2][s];pi_submatrices[k1][k2][s][z] is a real number.
-                        diagonal_block[z][0] = ((1 if player1.state_transitions[state2][observation] == state3 else 0))
-                    subsubmatrix.append(diagonal_block)
-                pi_submatricies[k1][k2] = block_diag(*subsubmatrix)
-
-        # we need to build a list of the submatricies to pass to np.bmat, and need to do it in column major order
-        pi = []
-        for k1 in range(len(K)):
-            sub_pi = []
-            for k2 in range(len(K)):
-              sub_pi.append(pi_submatricies[k2][k1])
-            pi.append(sub_pi)
-
-        Pi = np.bmat(pi)
-        return Pi
+        vf = ValueFunction().from_Player(player=player1, pomdp=self)
+        return vf.alpha_vectors, vf.actions
 
     def value_function_to_Cassandra_format(self, V: list, ak: list) -> str:
         """Takes a Value Function V and associated actions ak and outputs them in the Cassandra alpha file format.

@@ -48,7 +48,7 @@
 some condition is met - subclasses may define their own stopping conditions.</p>
 <dl class="method">
 <dt id="PDHS.and_or_tree.AOstar_Search.AOStarSearcher.forward_search">
-<code class="descname">forward_search</code><span class="sig-paren">(</span><em>initial_belief_state: list</em>, <em>S: list</em>, <em>O: dict</em>, <em>T: dict</em>, <em>V</em>, <em>upper_bound_function</em>, <em>stopping_function</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AOstar_Search.html#AOStarSearcher.forward_search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AOstar_Search.AOStarSearcher.forward_search" title="Permalink to this definition">¶</a></dt>
+<code class="descname">forward_search</code><span class="sig-paren">(</span><em>initial_belief_state: list</em>, <em>S: list</em>, <em>O: dict</em>, <em>T: dict</em>, <em>V: Heuristics.Bounds.LowerBound</em>, <em>upper_bound_function: Heuristics.Bounds.UpperBound</em>, <em>stopping_function</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AOstar_Search.html#AOStarSearcher.forward_search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AOstar_Search.AOStarSearcher.forward_search" title="Permalink to this definition">¶</a></dt>
 <dd><p>Using an initial belief state <cite>initial_belief_state</cite>, build and search an <cite>AO_Tree</cite> by repeatedly selecting a node
 from the <cite>AO_Tree</cite>&#8216;s fringe based on <cite>expand_heuristic</cite>. Stops after meeting some stopping condition.</p>
 <div class="admonition note">

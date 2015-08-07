@@ -38,6 +38,8 @@
           <div class="body" role="main">
             
   <h1>Source code for PDHS.and_or_tree.AO_Tree</h1><div class="highlight"><pre>
+<span class="kn">from</span> <span class="nn">Heuristics.Bounds</span> <span class="kn">import</span> <span class="n">LowerBound</span><span class="p">,</span> <span class="n">UpperBound</span>
+
 <span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;Victor Szczepanski&#39;</span>
 
 <span class="kn">import</span> <span class="nn">sys</span>
@@ -52,16 +54,20 @@
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        root (OR_Node): the root node of this AND/OR Tree.</span>
+<span class="sd">        U (UpperBound): the upper bound function to use for fringe nodes</span>
+<span class="sd">        L (LowerBound): the lower bound function to use for fringe nodes</span>
 <span class="sd">        actions (list[str]): the list of actions we can expand from an OR_Node.</span>
 <span class="sd">        observations (list[str]): the list of observations we can expand from an AND_Node.</span>
 <span class="sd">        fringe (list[OR_Node]): The fringe nodes that can be chosen for expansion.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="p">,</span> <span class="n">actions</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="p">[],</span> <span class="n">observations</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="p">[]):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="p">,</span> <span class="n">upper_bound_function</span><span class="p">:</span> <span class="n">UpperBound</span><span class="p">,</span> <span class="n">lower_bound_function</span><span class="p">:</span> <span class="n">LowerBound</span><span class="p">,</span> <span class="n">actions</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="p">[],</span> <span class="n">observations</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="p">[]):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="o">=</span> <span class="n">root</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">actions</span> <span class="o">=</span> <span class="n">actions</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">observations</span> <span class="o">=</span> <span class="n">observations</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fringe</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">U</span> <span class="o">=</span> <span class="n">upper_bound_function</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">L</span> <span class="o">=</span> <span class="n">lower_bound_function</span>
 
 <div class="viewcode-block" id="Tree.size"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Tree.size">[docs]</a>    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Calculate the size of this Tree.</span>
@@ -130,44 +136,145 @@
             <span class="n">and_children</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_child</span><span class="p">)</span>
 
         <span class="c"># for each new AND_Node, create an OR_Node and compute its belief state according to:</span>
-        <span class="c"># b_t(s&#39;) = \tau(b_{t-1}, a_{t-1}, z_t)(s&#39;) = \frac{1}{Pr(z_t | b_{t-1}, a_{t-1})} * O(s&#39;, a_{t-1}, z_t) \Sum_{s \in S} T(s, a_{t-1}, s&#39;)b_{t-1}(s)</span>
+        <span class="c"># b_t(s&#39;) = \tau(b_{t-1}, a_{t-1}, z_t)(s&#39;)</span>
         <span class="k">for</span> <span class="n">and_child</span> <span class="ow">in</span> <span class="n">and_children</span><span class="p">:</span> <span class="c">#iterate over all new AND_Nodes.</span>
             <span class="n">a</span> <span class="o">=</span> <span class="n">and_child</span><span class="o">.</span><span class="n">action</span>
             <span class="k">for</span> <span class="n">observation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">observations</span><span class="p">:</span>  <span class="c"># this generates each child of the and_child</span>
-                <span class="n">b_t</span> <span class="o">=</span> <span class="p">[]</span>
-                <span class="n">b_t_minusone</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">belief_state</span>  <span class="c"># b_t and b_t_minusone are vectors of probabilities, indexed by state.</span>
-                <span class="k">for</span> <span class="n">s_prime</span> <span class="ow">in</span> <span class="n">S</span><span class="p">:</span>
-                    <span class="c"># compute belief state point b_t(s&#39;)</span>
+                <span class="n">new_belief_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau</span><span class="p">(</span><span class="n">node</span><span class="o">=</span><span class="n">node</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">observation</span><span class="o">=</span><span class="n">observation</span><span class="p">,</span> <span class="n">O</span><span class="o">=</span><span class="n">O</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">S</span><span class="o">=</span><span class="n">S</span><span class="p">)</span>
+                <span class="n">obs_prob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pr_z</span><span class="p">(</span><span class="n">observation</span><span class="o">=</span><span class="n">observation</span><span class="p">,</span> <span class="n">belief_state</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">belief_state</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="n">a</span><span class="p">,</span>
+                                     <span class="n">O</span><span class="o">=</span><span class="n">O</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">S</span><span class="o">=</span><span class="n">S</span><span class="p">)</span>
 
-                    <span class="n">normalizing_factor</span> <span class="o">=</span> <span class="mi">0</span>
-                    <span class="k">for</span> <span class="n">s_subprime</span> <span class="ow">in</span> <span class="n">S</span><span class="p">:</span>
-                        <span class="n">new_observation</span> <span class="o">=</span> <span class="n">O</span><span class="p">[</span><span class="n">s_subprime</span><span class="p">][</span><span class="n">action</span><span class="p">][</span><span class="n">observation</span><span class="p">]</span>  <span class="c"># TODO: In Shun&#39;s proposed model, O takes 4 parameters - s (current state) is also required.</span>
-                        <span class="n">transition_prob</span> <span class="o">=</span> <span class="mi">0</span>
-                        <span class="k">for</span> <span class="n">s_index</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">S</span><span class="p">):</span>
-                            <span class="n">transition_prob</span> <span class="o">+=</span> <span class="n">T</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">a</span><span class="p">][</span><span class="n">s_subprime</span><span class="p">]</span> <span class="o">*</span> <span class="n">b_t_minusone</span><span class="p">[</span><span class="n">s_index</span><span class="p">]</span>
-                        <span class="n">normalizing_factor</span> <span class="o">+=</span> <span class="n">new_observation</span> <span class="o">*</span> <span class="n">transition_prob</span>
+                <span class="c"># probability of reaching new_child is the probability of reaching node * Pr(z | b,a)</span>
+                <span class="n">reach_probability</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">reach_probability</span><span class="o">*</span><span class="n">obs_prob</span>
 
-                    <span class="n">normalizing_factor</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="n">normalizing_factor</span>
-                    <span class="n">temp</span> <span class="o">=</span> <span class="n">normalizing_factor</span> <span class="o">*</span> <span class="n">O</span><span class="p">[</span><span class="n">s_prime</span><span class="p">][</span><span class="n">a</span><span class="p">][</span><span class="n">observation</span><span class="p">]</span>
-                    <span class="n">transition_sum</span> <span class="o">=</span> <span class="mi">0</span>
-                    <span class="k">for</span> <span class="n">s_index</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">S</span><span class="p">):</span>
-                        <span class="n">transition_sum</span> <span class="o">+=</span> <span class="n">T</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">a</span><span class="p">][</span><span class="n">s_prime</span><span class="p">]</span> <span class="o">*</span> <span class="n">b_t_minusone</span><span class="p">[</span><span class="n">s_index</span><span class="p">]</span>
-
-                    <span class="n">b_t</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">temp</span> <span class="o">*</span> <span class="n">transition_sum</span><span class="p">)</span>
-
-                <span class="c"># Pr(z | b,a) = \sum_{s&#39; in S} Pr(z|s&#39;,a) * \sum_{s in S} Pr(s&#39;|s,a)*b(s)</span>
-                <span class="n">obs_prob</span> <span class="o">=</span> <span class="mf">0.0</span>
-                <span class="k">for</span> <span class="n">s_prime</span> <span class="ow">in</span> <span class="n">S</span><span class="p">:</span>
-                    <span class="n">pr_z</span> <span class="o">=</span> <span class="n">O</span><span class="p">[</span><span class="n">s_prime</span><span class="p">][</span><span class="n">a</span><span class="p">][</span><span class="n">observation</span><span class="p">]</span>
-                    <span class="n">pr_s</span> <span class="o">=</span> <span class="mf">0.0</span>
-                    <span class="k">for</span> <span class="n">s_index</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">S</span><span class="p">):</span>
-                        <span class="n">pr_s</span> <span class="o">+=</span> <span class="n">T</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">a</span><span class="p">][</span><span class="n">s_prime</span><span class="p">]</span> <span class="o">*</span> <span class="n">b_t</span><span class="p">[</span><span class="n">s_index</span><span class="p">]</span>
-                    <span class="n">obs_prob</span> <span class="o">+=</span> <span class="n">pr_z</span> <span class="o">*</span> <span class="n">pr_s</span>
-                <span class="c"># probability of reaching new_child is the probability of reaching node * obs_prob</span>
-                <span class="n">new_child</span> <span class="o">=</span> <span class="n">OR_Node</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">and_child</span><span class="p">,</span> <span class="n">belief_state</span><span class="o">=</span><span class="n">b_t</span><span class="p">,</span> <span class="n">obs_prob</span><span class="o">=</span><span class="n">obs_prob</span><span class="p">,</span>
-                                    <span class="n">reach_probability</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">reach_probability</span><span class="o">*</span><span class="n">obs_prob</span><span class="p">)</span>
+                <span class="n">new_child</span> <span class="o">=</span> <span class="n">OR_Node</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">and_child</span><span class="p">,</span> <span class="n">belief_state</span><span class="o">=</span><span class="n">new_belief_state</span><span class="p">,</span><span class="n">obs_prob</span><span class="o">=</span><span class="n">obs_prob</span><span class="p">,</span>
+                                    <span class="n">reach_probability</span><span class="o">=</span><span class="n">reach_probability</span><span class="p">,</span> <span class="n">lower_bound</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">L</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">new_belief_state</span><span class="p">),</span>
+                                    <span class="n">upper_bound</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">U</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">new_belief_state</span><span class="p">))</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">fringe</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_child</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Tree.propagate"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Tree.propagate">[docs]</a>    <span class="k">def</span> <span class="nf">propagate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fringe_nodes</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="p">[]):</span>
+        <span class="sd">r&quot;&quot;&quot;Propagate upper and lower bound information to root.</span>
 
+<span class="sd">        Updates upper and lower bounds for ancestors of nodes in `fringe_nodes`.</span>
+
+<span class="sd">        And we propagate the upper bound as:</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            U_T(b) = \begin{cases}U(b), &amp; \text{if } b \in F(T) \\ \text{max}_{a \in A} U_T(b,a), &amp; \text{otherwise}\end{cases}</span>
+
+<span class="sd">            U_T(b,a) = R_B(b,a) + \gamma \sum_{z \in Z} \text{Pr}(z | b,a)U_T(\tau(b,a,z))</span>
+
+<span class="sd">        In both cases, F(T) is the set of fringe nodes in tree T, U_T(b) and L_T(b) represent upper and lower bounds on V&#39;(b) associated to belief state b,</span>
+<span class="sd">        U_T(b,a) and L_T(b,a) represent corresponding bounds on Q*(b,a), and L(b) and U(b) are the bounds of the fringe nodes.</span>
+
+
+
+<span class="sd">        Args:</span>
+<span class="sd">            fringe_nodes (list[OR_Node]): the nodes on the fringe from which to start bound propagation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">fringe_node</span> <span class="ow">in</span> <span class="n">fringe_nodes</span><span class="p">:</span>
+            <span class="n">node_ptr</span> <span class="o">=</span> <span class="n">fringe_node</span><span class="o">.</span><span class="n">parent</span>
+            <span class="k">while</span> <span class="n">node_ptr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">update_lower_bound</span><span class="p">(</span><span class="n">node_ptr</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">update_upper_bound</span><span class="p">(</span><span class="n">node_ptr</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Tree.update_lower_bound"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Tree.update_lower_bound">[docs]</a>    <span class="k">def</span> <span class="nf">update_lower_bound</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="sd">r&quot;&quot;&quot;Update the lower bound of `node`.</span>
+
+<span class="sd">        We propagate the lower bounds of the fringe nodes up the tree with these equations:</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            L_T(b) = \begin{cases} L(b), &amp; \text{if} b \in F(T) \\ \text{max}_{a \in A} L_T(b,a), &amp; \text{otherwise}\end{cases}</span>
+
+<span class="sd">            L_T(b,a) = R_B(b,a) + \gamma \sum_{z \in Z} \text{Pr}(z | b,a)L_T(\tau(b,a,z))</span>
+<span class="sd">        :param node:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+</div>
+<div class="viewcode-block" id="Tree.pr_z"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Tree.pr_z">[docs]</a>    <span class="k">def</span> <span class="nf">pr_z</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">observation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">belief_state</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">O</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">T</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">S</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="sd">r&quot;&quot;&quot;Implement the Pr(z | b, a) function.</span>
+
+<span class="sd">        Implements the function:</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            Pr(z | b, a) = \sum_{s&#39; \in S} O(s&#39;, a, z) \sum_{s \in S} T(s, a, s&#39;)*b(s)</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            observation (str): the observation z</span>
+<span class="sd">            belief_state (list[float]): the belief state b</span>
+<span class="sd">            action (str): the action a</span>
+<span class="sd">            O (dict[str, dict[str, dict[str, float]]]): the observation probability function. Function of state, action, observation.</span>
+<span class="sd">            T (dict[ str, dict[str, dict[str, float]]]): the state transition probability function. Function of state, action, state.</span>
+<span class="sd">            S (list[str]): the state set.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            float: the probability of observing `observation` given belief state `belief_state` and action `action`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">observation</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="n">belief_state</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">action</span>
+        <span class="c">#calculate Pr(z | b,a)</span>
+        <span class="n">pr_z</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">for</span> <span class="n">s_prime</span> <span class="ow">in</span> <span class="n">S</span><span class="p">:</span>
+            <span class="n">new_observation</span> <span class="o">=</span> <span class="n">O</span><span class="p">[</span><span class="n">s_prime</span><span class="p">][</span><span class="n">a</span><span class="p">][</span><span class="n">z</span><span class="p">]</span>  <span class="c"># TODO: In Shun&#39;s proposed model, O takes 4 parameters - s (current state) is also required.</span>
+            <span class="n">transition_prob</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">s_index</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">S</span><span class="p">):</span>
+                <span class="n">transition_prob</span> <span class="o">+=</span> <span class="n">T</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">a</span><span class="p">][</span><span class="n">s_prime</span><span class="p">]</span> <span class="o">*</span> <span class="n">b</span><span class="p">[</span><span class="n">s_index</span><span class="p">]</span>
+            <span class="n">pr_z</span> <span class="o">+=</span> <span class="n">new_observation</span> <span class="o">*</span> <span class="n">transition_prob</span>
+
+        <span class="k">return</span> <span class="n">pr_z</span>
+</div>
+<div class="viewcode-block" id="Tree.tau"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Tree.tau">[docs]</a>    <span class="k">def</span> <span class="nf">tau</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">observation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">O</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">T</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">S</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="sd">r&quot;&quot;&quot;Implement the tau function for computing belief update.</span>
+
+<span class="sd">        Implements the function:</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            \tau(b, a, z)(s&#39;) = \frac{1}{Pr(z | b, a)} * O(s&#39;, a, z)\sum_{s \in S} T(s, a, s&#39;)b(s)</span>
+
+<span class="sd">        We won&#39;t return a specific belief point, but the entire belief state:</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            \tau(b, a, z_t)</span>
+
+<span class="sd">        So, we return a list indexed by states in `S`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            node (Node): the node containing belief state b</span>
+<span class="sd">            action (str): the action a</span>
+<span class="sd">            observation (str): the observation z</span>
+<span class="sd">            O (dict[str, dict[str, dict[str, float]]]): the observation probability function. Function of state, action, observation.</span>
+<span class="sd">            T (dict[str, dict[str, dict[str, float]]]): the transition probability function. Function of state, action, state.</span>
+<span class="sd">            S (list[str]): list of states</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            list[float]: the updated belief state, given b, a, and z.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">observation</span>
+        <span class="sd">&quot;&quot;&quot;:type: str&quot;&quot;&quot;</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">belief_state</span>
+        <span class="sd">&quot;&quot;&quot;:type: list[float]&quot;&quot;&quot;</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">action</span>
+        <span class="sd">&quot;&quot;&quot;:type: str&quot;&quot;&quot;</span>
+
+        <span class="n">new_belief_state</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">s_prime</span> <span class="ow">in</span> <span class="n">S</span><span class="p">:</span>
+            <span class="c">#calculate Pr(z | b,a)</span>
+            <span class="n">pr_z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pr_z</span><span class="p">(</span><span class="n">observation</span><span class="o">=</span><span class="n">z</span><span class="p">,</span> <span class="n">belief_state</span><span class="o">=</span><span class="n">b</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">O</span><span class="o">=</span><span class="n">O</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">S</span><span class="o">=</span><span class="n">S</span><span class="p">)</span>
+
+            <span class="c">#calculate tau</span>
+            <span class="n">normalizing_factor</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">pr_z</span>
+            <span class="n">temp</span> <span class="o">=</span> <span class="n">normalizing_factor</span> <span class="o">*</span> <span class="n">O</span><span class="p">[</span><span class="n">s_prime</span><span class="p">][</span><span class="n">a</span><span class="p">][</span><span class="n">observation</span><span class="p">]</span>
+            <span class="sd">&quot;&quot;&quot;\frac{1}{Pr(z | b, a)} * O(s&#39;, a, z)&quot;&quot;&quot;</span>
+
+            <span class="n">transition_sum</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="sd">&quot;&quot;&quot;\sum_{s \in S} T(s, a, s&#39;)b(s)&quot;&quot;&quot;</span>
+
+            <span class="k">for</span> <span class="n">s_index</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">S</span><span class="p">):</span>
+                <span class="n">transition_sum</span> <span class="o">+=</span> <span class="n">T</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">a</span><span class="p">][</span><span class="n">s_prime</span><span class="p">]</span> <span class="o">*</span> <span class="n">b</span><span class="p">[</span><span class="n">s_index</span><span class="p">]</span>
+
+            <span class="n">new_belief_state</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">temp</span> <span class="o">*</span> <span class="n">transition_sum</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">new_belief_state</span>
 </div></div>
 <div class="viewcode-block" id="Node"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Node">[docs]</a><span class="k">class</span> <span class="nc">Node</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Represent a Node in an AO_Tree.</span>
