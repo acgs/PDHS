@@ -50,7 +50,7 @@ class Tree(object):
         size += sys.getsizeof(self.actions) + sys.getsizeof(self.observations)
         return size
 
-    def expand(self, node, O: dict, T: dict, S: list, R_B):
+    def expand(self, node, O: dict, T: dict, S: list, R: dict):
         r"""Expand a given node in this tree.
 
         Expands a node as described in "Online Planning Algorithms for POMDPs" by Ross, Pineau, et. al, Journal of Artifical Intelligence Research 32, (2008), 663-704.
@@ -79,9 +79,10 @@ class Tree(object):
             O (dict[str, dict[str, dict[str, float]]]): The observation function that maps a state to an action to an observation to a probability. Represents the conditional probability of observing w given state s and action a.
             T (dict[str, dict[str, dict[str, float]]]): The transition function that maps a state to an action to a state to a probability. Represents the conditional probability of transitioning from state s to s' given action a.
             S (list[str]): The states of the POMDP.
+            R (Dict[tuple[ACTION,STATE], float]): Mapping from action/state tuple to a payoff real value. Represents the immediate payoff of taking an action in a state.
         """
 
-        #First remove node from fringe.
+        # First remove node from fringe.
         try:
             self.fringe.remove(node)
         except ValueError:
@@ -112,41 +113,37 @@ class Tree(object):
                 # probability of reaching new_child is the probability of reaching node * Pr(z | b,a)
                 reach_probability = node.reach_probability*obs_prob
 
-                new_child = OR_Node(parent=and_child, belief_state=new_belief_state,obs_prob=obs_prob,
+                new_child = OR_Node(parent=and_child, belief_state=new_belief_state, obs_prob=obs_prob,
                                     reach_probability=reach_probability, lower_bound=self.L.value(new_belief_state),
                                     upper_bound=self.U.value(new_belief_state))
+
                 self.fringe.append(new_child)
                 self.fringe_beliefs.append(new_child.belief_state)
 
-                #TODO: Should we propagate after each child is created, or after they are all created? I think it doesn't matter
-                self.propagate(R_B, O, T, S, fringe_nodes=self.fringe)
+        #We propagate after all children are created, so that we don't propagate information from fringe nodes that we only propagate once for each fringe node.
+        self.propagate(R, O, T, S, fringe_nodes=self.fringe)
 
-    def propagate(self, R_B, O, T, S, fringe_nodes: list=[]):
+    def propagate(self, R, O, T, S, fringe_nodes: list=[]):
         r"""Propagate upper and lower bound information to root.
 
         Updates upper and lower bounds for ancestors of nodes in `fringe_nodes`.
 
-        And we propagate the upper bound as:
-
-
-        In both cases, F(T) is the set of fringe nodes in tree T, U_T(b) and L_T(b) represent upper and lower bounds on V'(b) associated to belief state b,
-        U_T(b,a) and L_T(b,a) represent corresponding bounds on Q*(b,a), and L(b) and U(b) are the bounds of the fringe nodes.
-
-
-
         Args:
-            R_B (dict[tuple[list[float], str], float]): The payoff function, mapping a belief state and action pair to a reward.
+            R (Dict[tuple[ACTION,STATE], float]): Mapping from action/state tuple to a payoff real value. Represents the immediate payoff of taking an action in a state.
+            O (dict[str, dict[str, dict[str, float]]]): The observation function that maps a state to an action to an observation to a probability. Represents the conditional probability of observing w given state s and action a.
+            T (dict[str, dict[str, dict[str, float]]]): The transition function that maps a state to an action to a state to a probability. Represents the conditional probability of transitioning from state s to s' given action a.
+            S (list[str]): The states of the POMDP.
             fringe_nodes Optional(list[OR_Node]): the nodes on the fringe from which to start bound propagation.
         """
         for fringe_node in fringe_nodes:
             node_ptr = fringe_node.parent
             """:type: Node"""
             while node_ptr is not None:
-                self.update_lower_bound(node_ptr, R_B, O, T, S)
+                self.update_lower_bound(node_ptr, R, O, T, S)
                 self.update_upper_bound(node_ptr)
                 node_ptr = node_ptr.parent
 
-    def update_lower_bound(self, node, R_B, O, T, S):
+    def update_lower_bound(self, node, R, O, T, S):
         r"""Update the lower bound of `node`.
 
         We propagate the lower bounds of the fringe nodes up the tree with these equations:
@@ -157,69 +154,97 @@ class Tree(object):
             L_T(b,a) = R_B(b,a) + \gamma \sum_{z \in Z} \text{Pr}(z | b,a)L_T(\tau(b,a,z))
 
 
+        F(T) is the set of fringe nodes in tree T, L_T(b) represents the lower bound on V'(b) associated to belief state b,
+        L_T(b,a) represents the corresponding bound on Q*(b,a), and L(b) is the bound of a fringe node.
+
+
         Args:
             node (Node): the node whose lower bound should be updated
-            R_B (dict[tuple[list[float], str], float]): the payoff function, mapping a belief state and action pair to a reward.
+            R (Dict[tuple[ACTION,STATE], float]): Mapping from action/state tuple to a payoff real value. Represents the immediate payoff of taking an action in a state.
+            O (dict[str, dict[str, dict[str, float]]]): The observation function that maps a state to an action to an observation to a probability. Represents the conditional probability of observing w given state s and action a.
+            T (dict[str, dict[str, dict[str, float]]]): The transition function that maps a state to an action to a state to a probability. Represents the conditional probability of transitioning from state s to s' given action a.
+            S (list[str]): The states of the POMDP.
         """
-        node.lower_bound = self.bound_t(node.belief_state, R_B, O, T, S, self.L)
+        node.lower_bound = self.bound_t(node.belief_state, R, O, T, S, self.L)
 
-    def update_upper_bound(self, node, R_B, O, T, S):
+    def update_upper_bound(self, node, R, O, T, S):
         r"""Update the upper bound of `node`.
 
         We propagate the upper bounds of the fringe nodes up the tree with these equations:
+
         .. math::
             U_T(b) = \begin{cases}U(b), & \text{if } b \in F(T) \\ \text{max}_{a \in A} U_T(b,a), & \text{otherwise}\end{cases}
 
             U_T(b,a) = R_B(b,a) + \gamma \sum_{z \in Z} \text{Pr}(z | b,a)U_T(\tau(b,a,z))
-        :param node:
-        :param R_B:
-        :param O:
-        :param T:
-        :param S:
-        :return:
-        """
-        node.upper_bound = self.bound_t(node.belief_state, R_B, O, T, S, self.U)
 
-    def bound_t(self, belief_state, R_B, O, T, S, fringe_function: Bound):
+        F(T) is the set of fringe nodes in tree T, U_T(b) represents the upper bound on V'(b) associated to belief state b,
+        U_T(b,a) represents the corresponding bound on Q*(b,a), and U(b) is the bound of a fringe node.
+
+        Args:
+            node (Node): the node whose upper bound will be updated.
+            R (Dict[tuple[ACTION,STATE], float]): Mapping from action/state tuple to a payoff real value. Represents the immediate payoff of taking an action in a state.
+            O (dict[str, dict[str, dict[str, float]]]): The observation function that maps a state to an action to an observation to a probability. Represents the conditional probability of observing w given state s and action a.
+            T (dict[str, dict[str, dict[str, float]]]): The transition function that maps a state to an action to a state to a probability. Represents the conditional probability of transitioning from state s to s' given action a.
+            S (list[str]): The states of the POMDP.
+
+        """
+        node.upper_bound = self.bound_t(node.belief_state, R, O, T, S, self.U)
+
+    def bound_t(self, belief_state, R, O, T, S, fringe_function: Bound):
         """Abstract update to upper bound and lower bound.
 
         By taking a function parameter, abstract the calculation for bound propagation.
 
-        :param belief_state:
-        :param R_B:
-        :param O:
-        :param T:
-        :param S:
-        :param fringe_function:
-        :param action_function:
-        :return:
+        If `belief_state` is a fringe belief, we use `fringe_function` to calculate its bound.
+        Thus, if `fringe_function` is a ``Lower_Bound``, `bound_t` calculates the lower bound.
+
+        Args:
+            belief_state (list[float]): the belief state to use for updating
+            R (Dict[tuple[ACTION,STATE], float]): Mapping from action/state tuple to a payoff real value. Represents the immediate payoff of taking an action in a state.
+            O (dict[str, dict[str, dict[str, float]]]): The observation function that maps a state to an action to an observation to a probability. Represents the conditional probability of observing w given state s and action a.
+            T (dict[str, dict[str, dict[str, float]]]): The transition function that maps a state to an action to a state to a probability. Represents the conditional probability of transitioning from state s to s' given action a.
+            S (list[str]): The states of the POMDP.
+            fringe_function (Bound): A Bound that exposes a value method to use for fringe node Bound calculation.
+
+        Returns:
+            float: The new bound for the node corresponding to the belief state `belief_state`.
         """
         if belief_state in self.fringe_beliefs:
             return fringe_function.value(belief_state)
         else:
-            new_lower_bound = 0
+            new_bound = 0
             for action in self.actions:
                 bound_t = self.bound_action(belief_state=belief_state,
-                                            R_B=R_B, O=O, T=T, S=S, action=action, fringe_function=fringe_function)
-                if bound_t > new_lower_bound:
-                    new_lower_bound = bound_t
-            return new_lower_bound
+                                            R=R, O=O, T=T, S=S, action=action, fringe_function=fringe_function)
+                if bound_t > new_bound:
+                    new_bound = bound_t
+            return new_bound
 
-    def bound_action(self, belief_state, R_B, O, T, S, action, fringe_function):
+    def bound_action(self, belief_state, R, O, T, S, action, fringe_function):
         r"""
         Calculate the sub-function used by bound_t.
 
         Implement:
+
         .. math::
-            U_T(b,a) = R_B(b,a) + \gamma \sum_{z \in Z} \text{Pr}(z | b,a)U_T(\tau(b,a,z))
-        :param belief_state:
-        :param R_B:
-        :param O:
-        :param T:
-        :param S:
-        :param action:
-        :param fringe_function:
-        :return:
+            B_T(b,a) = R_B(b,a) + \gamma \sum_{z \in Z} \text{Pr}(z | b,a)B_T(\tau(b,a,z))
+
+            R_B(beliefstate, action) = \sum_{s \in S} b(s)R(s,a)
+
+
+        Where B_T is a generic bound - the true bound is given by `fringe_function` -
+        if it is a lower bound, calculates L_T, if it is an upper bound, calculates U_T.
+
+        Args:
+            belief_state (list[float]): the belief state to use for updating
+            R (Dict[tuple[ACTION,STATE], float]): Mapping from action/state tuple to a payoff real value. Represents the immediate payoff of taking an action in a state.
+            O (dict[str, dict[str, dict[str, float]]]): The observation function that maps a state to an action to an observation to a probability. Represents the conditional probability of observing w given state s and action a.
+            T (dict[str, dict[str, dict[str, float]]]): The transition function that maps a state to an action to a state to a probability. Represents the conditional probability of transitioning from state s to s' given action a.
+            S (list[str]): The states of the POMDP.
+            action (str): The action to calculate the bound with.
+            fringe_function (Bound): A Bound that exposes a value method to use for fringe node Bound calculation.
+        Returns:
+            float: B_T(`belief_state`, `action`) - the bound for this `belief_state`, `action` pair.
         """
         weighted_lower_bound = 0
         for observation in self.observations:
@@ -227,9 +252,12 @@ class Tree(object):
                                                action=action, O=O, S=S, T=T) *
                                      self.bound_t(self.tau(belief_state, action=action,
                                                            observation=observation, O=O, T=T, S=S),
-                                                  R_B, O, T, S, fringe_function=fringe_function)
+                                                  R, O, T, S, fringe_function=fringe_function)
                                      )
-        return R_B[(belief_state, action)] + weighted_lower_bound
+
+        # We calculate R_B(belief_state, action) here, from R.
+        R_B = sum([belief*R[(S[i], action)] for i, belief in enumerate(belief_state)])
+        return R_B + weighted_lower_bound
 
     def pr_z(self, observation: str, belief_state: list, action: str, O: dict, T: dict, S: list):
         r"""Implement the Pr(z | b, a) function.
@@ -315,6 +343,7 @@ class Tree(object):
 
         return new_belief_state
 
+
 class Node(object):
     """Represent a Node in an AO_Tree.
 
@@ -331,16 +360,20 @@ class Node(object):
         children (list[Node]): children of this Node.
         upper_bound (float): Upper bound for this Node. May be updated when a new node is expanded in the AO_Tree.
         lower_bound (float): Lower bound of this Node. May be updated when a new node is expanded in the AO_Tree.
+        initial_upper_bound (float): The initial upper bound. Will not be changed when this node is expanded.
+        initial_lower_bound (float): The initial lower bound. Will not be changed when this node is expanded.
         depth (int): current depth (measured from root) of this Node.
 
     """
 
-    def __init__(self, parent=None, children: list=[], upper_bound: float=0.0, lower_bound: float=0.0):
+    def __init__(self, parent=None, children: list=(), upper_bound: float=0.0, lower_bound: float=0.0):
         self.parent = parent
         self.children = children
         self.upper_bound = upper_bound
         self.lower_bound = lower_bound
         self.depth = 0
+        self.initial_lower_bound = lower_bound
+        self.initial_upper_bound = upper_bound
 
         self._update_depth()
 
@@ -390,6 +423,7 @@ class Node(object):
         """
         return 0
 
+
 class OR_Node(Node):
     """Subclass Node to include belief state.
 
@@ -401,9 +435,9 @@ class OR_Node(Node):
         obs_prob (float): the probability of the observation that gave rise to this OR_Node.
     """
 
-    def __init__(self, parent: Node=None, children: list=[], upper_bound: float=0.0, lower_bound: float=0.0,
-                 belief_state: list=[], reach_probability: float=0.0, obs_prob: float=0.0):
-        super(Node, self).__init__(parent, children, upper_bound, lower_bound)
+    def __init__(self, parent: Node=None, children: list=(), upper_bound: float=0.0, lower_bound: float=0.0,
+                 belief_state: list=(), reach_probability: float=0.0, obs_prob: float=0.0):
+        super().__init__(parent, children, upper_bound, lower_bound)
         self.belief_state = belief_state
         self.reach_probability = reach_probability
         self.obs_prob = obs_prob
@@ -424,6 +458,18 @@ class OR_Node(Node):
         if self.parent is not None:
             self.depth = self.parent.depth + 1
 
+    def __str__(self):
+        s = ['OR_Node.']
+        s.append('Belief state: {}'.format(self.belief_state))
+        s.append('Reach probability: {}'.format(self.reach_probability))
+        s.append('observation probability: {}'.format(self.obs_prob))
+        s.append('Value: {}'.format(self.value))
+        s.append('Upper Bound: {}'.format(self.upper_bound))
+        s.append('Lower Bound: {}'.format(self.lower_bound))
+        s.append('Parent: {}'.format(self.parent))
+        return '\n'.join(s)
+
+
 
 class AND_Node(Node):
     """Subclass Node to include action choice.
@@ -435,8 +481,8 @@ class AND_Node(Node):
 
     """
 
-    def __init__(self, parent=None, children: list=[], upper_bound: float=0.0, lower_bound: float=0.0, action: str=None):
-        super(Node, self).__init__(parent, children, upper_bound, lower_bound)
+    def __init__(self, parent=None, children: list=(), upper_bound: float=0.0, lower_bound: float=0.0, action: str=None):
+        super().__init__(parent, children, upper_bound, lower_bound)
         self.action = action
         self.successors = []
 

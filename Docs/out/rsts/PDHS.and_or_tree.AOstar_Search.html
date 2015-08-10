@@ -48,7 +48,7 @@
 some condition is met - subclasses may define their own stopping conditions.</p>
 <dl class="method">
 <dt id="PDHS.and_or_tree.AOstar_Search.AOStarSearcher.forward_search">
-<code class="descname">forward_search</code><span class="sig-paren">(</span><em>initial_belief_state: list</em>, <em>S: list</em>, <em>O: dict</em>, <em>T: dict</em>, <em>V: Heuristics.Bounds.LowerBound</em>, <em>upper_bound_function: Heuristics.Bounds.UpperBound</em>, <em>stopping_function</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AOstar_Search.html#AOStarSearcher.forward_search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AOstar_Search.AOStarSearcher.forward_search" title="Permalink to this definition">¶</a></dt>
+<code class="descname">forward_search</code><span class="sig-paren">(</span><em>initial_belief_state: list</em>, <em>S: list</em>, <em>O: dict</em>, <em>T: dict</em>, <em>R: dict</em>, <em>V: Heuristics.Bounds.LowerBound</em>, <em>upper_bound_function: Heuristics.Bounds.UpperBound</em>, <em>stopping_function</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AOstar_Search.html#AOStarSearcher.forward_search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AOstar_Search.AOStarSearcher.forward_search" title="Permalink to this definition">¶</a></dt>
 <dd><p>Using an initial belief state <cite>initial_belief_state</cite>, build and search an <cite>AO_Tree</cite> by repeatedly selecting a node
 from the <cite>AO_Tree</cite>&#8216;s fringe based on <cite>expand_heuristic</cite>. Stops after meeting some stopping condition.</p>
 <div class="admonition note">
@@ -65,7 +65,10 @@ If the stopping condition fails to guarantee this, then <cite>forward_search</ci
 <li><strong>S</strong> (<em>list[str]</em>) &#8211; the states of the POMDP</li>
 <li><strong>O</strong> (<em>dict[str, dict[str, dict[str, float]]]</em>) &#8211; The probability function that the agent makes an observation w given an action a and next state s&#8217;.</li>
 <li><strong>T</strong> (<em>dict[str, dict[str, dict[str, float]]]</em>) &#8211; The probability function that the system changes from state s to state s&#8217; given an action a.</li>
-<li><strong>stopping_function</strong> (<em>function</em>) &#8211; A function reference that takes a single argument of type <cite>Tree</cite> and returns a Bool that represents whether to stop the forward search or not.</li>
+<li><strong>R</strong> (<em>Dict[tuple[ACTION,STATE], float]</em>) &#8211; Mapping from action/state tuple to a payoff real value. Represents the immediate payoff of taking an action in a state.</li>
+<li><strong>V</strong> (<a class="reference internal" href="PDHS.Heuristics.Bounds.html#PDHS.Heuristics.Bounds.LowerBound" title="PDHS.Heuristics.Bounds.LowerBound"><em>LowerBound</em></a>) &#8211; The lower bound function - for PDHS, this is the ValueFunction representing the policy to be improved.</li>
+<li><strong>upper_bound_function</strong> (<a class="reference internal" href="PDHS.Heuristics.Bounds.html#PDHS.Heuristics.Bounds.UpperBound" title="PDHS.Heuristics.Bounds.UpperBound"><em>UpperBound</em></a>) &#8211; The upper bound function to calculate the upper bound at fringe nodes.</li>
+<li><strong>stopping_function</strong> (<em>TreeExitCondition</em>) &#8211; A function reference that takes a single argument of type <cite>Tree</cite> and returns a Bool that represents whether to stop the forward search or not.</li>
 </ul>
 </td>
 </tr>

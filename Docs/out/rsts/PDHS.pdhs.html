@@ -40,12 +40,12 @@
 <span id="pdhs-pdhs-module"></span><h1>PDHS.pdhs module<a class="headerlink" href="#module-PDHS.pdhs" title="Permalink to this headline">¶</a></h1>
 <dl class="function">
 <dt id="PDHS.pdhs.main">
-<code class="descclassname">PDHS.pdhs.</code><code class="descname">main</code><span class="sig-paren">(</span><em>input_filename: str</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/pdhs.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.pdhs.main" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">PDHS.pdhs.</code><code class="descname">main</code><span class="sig-paren">(</span><em>input_filename: str</em>, <em>verbose: bool</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/pdhs.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.pdhs.main" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
 <dt id="PDHS.pdhs.policy_driven_heuristic_search">
-<code class="descclassname">PDHS.pdhs.</code><code class="descname">policy_driven_heuristic_search</code><span class="sig-paren">(</span><em>pomdp</em>, <em>T</em>, <em>S</em>, <em>O</em>, <em>beta: float=0.0</em>, <em>epsilon: float=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/pdhs.html#policy_driven_heuristic_search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.pdhs.policy_driven_heuristic_search" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">PDHS.pdhs.</code><code class="descname">policy_driven_heuristic_search</code><span class="sig-paren">(</span><em>pomdp</em>, <em>T</em>, <em>S</em>, <em>O</em>, <em>upper_bound: Heuristics.Bounds.UpperBound</em>, <em>initial_belief_state: list=[]</em>, <em>beta: float=0.0</em>, <em>epsilon: float=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/pdhs.html#policy_driven_heuristic_search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.pdhs.policy_driven_heuristic_search" title="Permalink to this definition">¶</a></dt>
 <dd><p>Implement Hansen&#8217;s heuristic search algorithm.</p>
 <p>We ignore step 1., since we get the finite-state controller and epsilon as arguments.
 2. Compute V for P.
@@ -82,6 +82,59 @@
 </tr>
 </tbody>
 </table>
+</dd></dl>
+
+<dl class="function">
+<dt id="PDHS.pdhs.train_upper_bound">
+<code class="descclassname">PDHS.pdhs.</code><code class="descname">train_upper_bound</code><span class="sig-paren">(</span><em>upper_bound: Heuristics.Bounds.ImprovableUpperBound</em>, <em>timeout: float=10</em>, <em>max_iterations: int=100</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/pdhs.html#train_upper_bound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.pdhs.train_upper_bound" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simply runs the upper bound&#8217;s improve function iteratively until it converges or runs out of time.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>upper_bound</strong> (<a class="reference internal" href="PDHS.Heuristics.Bounds.html#PDHS.Heuristics.Bounds.UpperBound" title="PDHS.Heuristics.Bounds.UpperBound"><em>UpperBound</em></a>) &#8211; the upper bound to train/improve</li>
+<li><strong>timeout</strong> (<em>float</em>) &#8211; the time, in seconds, to allow training to occur.</li>
+<li><strong>max_iterations</strong> (<em>int</em>) &#8211; the maximum number of iterations to let the training run.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="PDHS.pdhs.tree_exit_condition">
+<em class="property">class </em><code class="descclassname">PDHS.pdhs.</code><code class="descname">tree_exit_condition</code><span class="sig-paren">(</span><em>epsilon: float</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/pdhs.html#tree_exit_condition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.pdhs.tree_exit_condition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Define an exit condition for forward search of an AO-Tree.</p>
+<p>In particular, implement the condition described by Hansen (1997) -
+if lower bound of root is improved or difference of upper and lower bound of root is &lt;= epsilon, exit.</p>
+<dl class="attribute">
+<dt id="PDHS.pdhs.tree_exit_condition.epsilon">
+<code class="descname">epsilon</code><a class="headerlink" href="#PDHS.pdhs.tree_exit_condition.epsilon" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em></p>
+<p>the value for epsilon convergence.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PDHS.pdhs.tree_exit_condition.stop">
+<code class="descname">stop</code><span class="sig-paren">(</span><em>t: and_or_tree.AO_Tree.Tree</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/pdhs.html#tree_exit_condition.stop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.pdhs.tree_exit_condition.stop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stop forward search if lower bound of root is improved or error bound is less than or equal to epsilon.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>t</strong> (<a class="reference internal" href="PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Tree" title="PDHS.and_or_tree.AO_Tree.Tree"><em>Tree</em></a>) &#8211; The AO Tree to test if forward search can stop on it.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">True if the stopping condition is met. False otherwise.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">(bool)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 </dd></dl>
 
 </div>

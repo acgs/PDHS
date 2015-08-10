@@ -40,7 +40,7 @@
 <span id="pdhs-and-or-tree-ao-tree-module"></span><h1>PDHS.and_or_tree.AO_Tree module<a class="headerlink" href="#module-PDHS.and_or_tree.AO_Tree" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="PDHS.and_or_tree.AO_Tree.AND_Node">
-<em class="property">class </em><code class="descclassname">PDHS.and_or_tree.AO_Tree.</code><code class="descname">AND_Node</code><span class="sig-paren">(</span><em>parent=None</em>, <em>children: list=[]</em>, <em>upper_bound: float=0.0</em>, <em>lower_bound: float=0.0</em>, <em>action: str=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#AND_Node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.AND_Node" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">PDHS.and_or_tree.AO_Tree.</code><code class="descname">AND_Node</code><span class="sig-paren">(</span><em>parent=None</em>, <em>children: list=()</em>, <em>upper_bound: float=0.0</em>, <em>lower_bound: float=0.0</em>, <em>action: str=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#AND_Node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.AND_Node" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#PDHS.and_or_tree.AO_Tree.Node" title="PDHS.and_or_tree.AO_Tree.Node"><code class="xref py py-class docutils literal"><span class="pre">PDHS.and_or_tree.AO_Tree.Node</span></code></a></p>
 <p>Subclass Node to include action choice.</p>
 <p>AND_Nodes include an action choice.</p>
@@ -61,7 +61,7 @@
 
 <dl class="class">
 <dt id="PDHS.and_or_tree.AO_Tree.Node">
-<em class="property">class </em><code class="descclassname">PDHS.and_or_tree.AO_Tree.</code><code class="descname">Node</code><span class="sig-paren">(</span><em>parent=None</em>, <em>children: list=[]</em>, <em>upper_bound: float=0.0</em>, <em>lower_bound: float=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Node" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">PDHS.and_or_tree.AO_Tree.</code><code class="descname">Node</code><span class="sig-paren">(</span><em>parent=None</em>, <em>children: list=()</em>, <em>upper_bound: float=0.0</em>, <em>lower_bound: float=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Node" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>Represent a Node in an AO_Tree.</p>
 <p>Represent, in a general sense, a node of an AND/OR Tree. An AO_Tree is composed of Nodes.</p>
@@ -108,6 +108,20 @@
 </dd></dl>
 
 <dl class="attribute">
+<dt id="PDHS.and_or_tree.AO_Tree.Node.initial_upper_bound">
+<code class="descname">initial_upper_bound</code><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Node.initial_upper_bound" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em></p>
+<p>The initial upper bound. Will not be changed when this node is expanded.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PDHS.and_or_tree.AO_Tree.Node.initial_lower_bound">
+<code class="descname">initial_lower_bound</code><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Node.initial_lower_bound" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em></p>
+<p>The initial lower bound. Will not be changed when this node is expanded.</p>
+</dd></dl>
+
+<dl class="attribute">
 <dt id="PDHS.and_or_tree.AO_Tree.Node.depth">
 <code class="descname">depth</code><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Node.depth" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>int</em></p>
@@ -147,7 +161,7 @@
 
 <dl class="class">
 <dt id="PDHS.and_or_tree.AO_Tree.OR_Node">
-<em class="property">class </em><code class="descclassname">PDHS.and_or_tree.AO_Tree.</code><code class="descname">OR_Node</code><span class="sig-paren">(</span><em>parent: PDHS.and_or_tree.AO_Tree.Node=None</em>, <em>children: list=[]</em>, <em>upper_bound: float=0.0</em>, <em>lower_bound: float=0.0</em>, <em>belief_state: list=[]</em>, <em>reach_probability: float=0.0</em>, <em>obs_prob: float=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#OR_Node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.OR_Node" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">PDHS.and_or_tree.AO_Tree.</code><code class="descname">OR_Node</code><span class="sig-paren">(</span><em>parent: PDHS.and_or_tree.AO_Tree.Node=None</em>, <em>children: list=()</em>, <em>upper_bound: float=0.0</em>, <em>lower_bound: float=0.0</em>, <em>belief_state: list=()</em>, <em>reach_probability: float=0.0</em>, <em>obs_prob: float=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#OR_Node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.OR_Node" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#PDHS.and_or_tree.AO_Tree.Node" title="PDHS.and_or_tree.AO_Tree.Node"><code class="xref py py-class docutils literal"><span class="pre">PDHS.and_or_tree.AO_Tree.Node</span></code></a></p>
 <p>Subclass Node to include belief state.</p>
 <p>OR_Nodes include a belief state.</p>
@@ -232,8 +246,75 @@
 </dd></dl>
 
 <dl class="method">
+<dt id="PDHS.and_or_tree.AO_Tree.Tree.bound_action">
+<code class="descname">bound_action</code><span class="sig-paren">(</span><em>belief_state</em>, <em>R</em>, <em>O</em>, <em>T</em>, <em>S</em>, <em>action</em>, <em>fringe_function</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Tree.bound_action"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.bound_action" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the sub-function used by bound_t.</p>
+<p>Implement:</p>
+<div class="math">
+<p><img src="../_images/math/f70b53f651ba5085874fef304c1a2d349383d62a.png" alt="B_T(b,a) = R_B(b,a) + \gamma \sum_{z \in Z} \text{Pr}(z | b,a)B_T(\tau(b,a,z))
+
+R_B(beliefstate, action) = \sum_{s \in S} b(s)R(s,a)"/></p>
+</div><p>Where B_T is a generic bound - the true bound is given by <cite>fringe_function</cite> -
+if it is a lower bound, calculates L_T, if it is an upper bound, calculates U_T.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>belief_state</strong> (<em>list[float]</em>) &#8211; the belief state to use for updating</li>
+<li><strong>R</strong> (<em>Dict[tuple[ACTION,STATE], float]</em>) &#8211; Mapping from action/state tuple to a payoff real value. Represents the immediate payoff of taking an action in a state.</li>
+<li><strong>O</strong> (<em>dict[str, dict[str, dict[str, float]]]</em>) &#8211; The observation function that maps a state to an action to an observation to a probability. Represents the conditional probability of observing w given state s and action a.</li>
+<li><strong>T</strong> (<em>dict[str, dict[str, dict[str, float]]]</em>) &#8211; The transition function that maps a state to an action to a state to a probability. Represents the conditional probability of transitioning from state s to s&#8217; given action a.</li>
+<li><strong>S</strong> (<em>list[str]</em>) &#8211; The states of the POMDP.</li>
+<li><strong>action</strong> (<em>str</em>) &#8211; The action to calculate the bound with.</li>
+<li><strong>fringe_function</strong> (<a class="reference internal" href="PDHS.Heuristics.Bounds.html#PDHS.Heuristics.Bounds.Bound" title="PDHS.Heuristics.Bounds.Bound"><em>Bound</em></a>) &#8211; A Bound that exposes a value method to use for fringe node Bound calculation.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">B_T(<cite>belief_state</cite>, <cite>action</cite>) - the bound for this <cite>belief_state</cite>, <cite>action</cite> pair.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PDHS.and_or_tree.AO_Tree.Tree.bound_t">
+<code class="descname">bound_t</code><span class="sig-paren">(</span><em>belief_state</em>, <em>R</em>, <em>O</em>, <em>T</em>, <em>S</em>, <em>fringe_function: Heuristics.Bounds.Bound</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Tree.bound_t"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.bound_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract update to upper bound and lower bound.</p>
+<p>By taking a function parameter, abstract the calculation for bound propagation.</p>
+<p>If <cite>belief_state</cite> is a fringe belief, we use <cite>fringe_function</cite> to calculate its bound.
+Thus, if <cite>fringe_function</cite> is a <code class="docutils literal"><span class="pre">Lower_Bound</span></code>, <cite>bound_t</cite> calculates the lower bound.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>belief_state</strong> (<em>list[float]</em>) &#8211; the belief state to use for updating</li>
+<li><strong>R</strong> (<em>Dict[tuple[ACTION,STATE], float]</em>) &#8211; Mapping from action/state tuple to a payoff real value. Represents the immediate payoff of taking an action in a state.</li>
+<li><strong>O</strong> (<em>dict[str, dict[str, dict[str, float]]]</em>) &#8211; The observation function that maps a state to an action to an observation to a probability. Represents the conditional probability of observing w given state s and action a.</li>
+<li><strong>T</strong> (<em>dict[str, dict[str, dict[str, float]]]</em>) &#8211; The transition function that maps a state to an action to a state to a probability. Represents the conditional probability of transitioning from state s to s&#8217; given action a.</li>
+<li><strong>S</strong> (<em>list[str]</em>) &#8211; The states of the POMDP.</li>
+<li><strong>fringe_function</strong> (<a class="reference internal" href="PDHS.Heuristics.Bounds.html#PDHS.Heuristics.Bounds.Bound" title="PDHS.Heuristics.Bounds.Bound"><em>Bound</em></a>) &#8211; A Bound that exposes a value method to use for fringe node Bound calculation.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The new bound for the node corresponding to the belief state <cite>belief_state</cite>.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="PDHS.and_or_tree.AO_Tree.Tree.expand">
-<code class="descname">expand</code><span class="sig-paren">(</span><em>node</em>, <em>O: dict</em>, <em>T: dict</em>, <em>S: list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Tree.expand"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.expand" title="Permalink to this definition">¶</a></dt>
+<code class="descname">expand</code><span class="sig-paren">(</span><em>node</em>, <em>O: dict</em>, <em>T: dict</em>, <em>S: list</em>, <em>R: dict</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Tree.expand"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.expand" title="Permalink to this definition">¶</a></dt>
 <dd><p>Expand a given node in this tree.</p>
 <p>Expands a node as described in &#8220;Online Planning Algorithms for POMDPs&#8221; by Ross, Pineau, et. al, Journal of Artifical Intelligence Research 32, (2008), 663-704.</p>
 <p>In particular, implements the function</p>
@@ -263,6 +344,7 @@ for node in self.fringe:</p>
 <li><strong>O</strong> (<em>dict[str, dict[str, dict[str, float]]]</em>) &#8211; The observation function that maps a state to an action to an observation to a probability. Represents the conditional probability of observing w given state s and action a.</li>
 <li><strong>T</strong> (<em>dict[str, dict[str, dict[str, float]]]</em>) &#8211; The transition function that maps a state to an action to a state to a probability. Represents the conditional probability of transitioning from state s to s&#8217; given action a.</li>
 <li><strong>S</strong> (<em>list[str]</em>) &#8211; The states of the POMDP.</li>
+<li><strong>R</strong> (<em>Dict[tuple[ACTION,STATE], float]</em>) &#8211; Mapping from action/state tuple to a payoff real value. Represents the immediate payoff of taking an action in a state.</li>
 </ul>
 </td>
 </tr>
@@ -303,21 +385,21 @@ for node in self.fringe:</p>
 
 <dl class="method">
 <dt id="PDHS.and_or_tree.AO_Tree.Tree.propagate">
-<code class="descname">propagate</code><span class="sig-paren">(</span><em>fringe_nodes: list=[]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Tree.propagate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.propagate" title="Permalink to this definition">¶</a></dt>
+<code class="descname">propagate</code><span class="sig-paren">(</span><em>R</em>, <em>O</em>, <em>T</em>, <em>S</em>, <em>fringe_nodes: list=[]</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Tree.propagate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.propagate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Propagate upper and lower bound information to root.</p>
 <p>Updates upper and lower bounds for ancestors of nodes in <cite>fringe_nodes</cite>.</p>
-<p>And we propagate the upper bound as:</p>
-<div class="math">
-<p><img src="../_images/math/b178fcc4dead3b550edb154e852f10fed5451348.png" alt="U_T(b) = \begin{cases}U(b), &amp; \text{if } b \in F(T) \\ \text{max}_{a \in A} U_T(b,a), &amp; \text{otherwise}\end{cases}
-
-U_T(b,a) = R_B(b,a) + \gamma \sum_{z \in Z} \text{Pr}(z | b,a)U_T(\tau(b,a,z))"/></p>
-</div><p>In both cases, F(T) is the set of fringe nodes in tree T, U_T(b) and L_T(b) represent upper and lower bounds on V&#8217;(b) associated to belief state b,
-U_T(b,a) and L_T(b,a) represent corresponding bounds on Q*(b,a), and L(b) and U(b) are the bounds of the fringe nodes.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fringe_nodes</strong> (<em>list[OR_Node]</em>) &#8211; the nodes on the fringe from which to start bound propagation.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>R</strong> (<em>Dict[tuple[ACTION,STATE], float]</em>) &#8211; Mapping from action/state tuple to a payoff real value. Represents the immediate payoff of taking an action in a state.</li>
+<li><strong>O</strong> (<em>dict[str, dict[str, dict[str, float]]]</em>) &#8211; The observation function that maps a state to an action to an observation to a probability. Represents the conditional probability of observing w given state s and action a.</li>
+<li><strong>T</strong> (<em>dict[str, dict[str, dict[str, float]]]</em>) &#8211; The transition function that maps a state to an action to a state to a probability. Represents the conditional probability of transitioning from state s to s&#8217; given action a.</li>
+<li><strong>S</strong> (<em>list[str]</em>) &#8211; The states of the POMDP.</li>
+<li><strong>Optional</strong> (<em>fringe_nodes</em>) &#8211; the nodes on the fringe from which to start bound propagation.</li>
+</ul>
+</td>
 </tr>
 </tbody>
 </table>
@@ -340,7 +422,7 @@ U_T(b,a) and L_T(b,a) represent corresponding bounds on Q*(b,a), and L(b) and U(
 
 <dl class="method">
 <dt id="PDHS.and_or_tree.AO_Tree.Tree.tau">
-<code class="descname">tau</code><span class="sig-paren">(</span><em>node</em>, <em>action: str</em>, <em>observation: str</em>, <em>O: dict</em>, <em>T: dict</em>, <em>S: list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Tree.tau"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.tau" title="Permalink to this definition">¶</a></dt>
+<code class="descname">tau</code><span class="sig-paren">(</span><em>belief_state</em>, <em>action: str</em>, <em>observation: str</em>, <em>O: dict</em>, <em>T: dict</em>, <em>S: list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Tree.tau"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.tau" title="Permalink to this definition">¶</a></dt>
 <dd><p>Implement the tau function for computing belief update.</p>
 <p>Implements the function:</p>
 <div class="math">
@@ -375,20 +457,55 @@ U_T(b,a) and L_T(b,a) represent corresponding bounds on Q*(b,a), and L(b) and U(
 
 <dl class="method">
 <dt id="PDHS.and_or_tree.AO_Tree.Tree.update_lower_bound">
-<code class="descname">update_lower_bound</code><span class="sig-paren">(</span><em>node</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Tree.update_lower_bound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.update_lower_bound" title="Permalink to this definition">¶</a></dt>
+<code class="descname">update_lower_bound</code><span class="sig-paren">(</span><em>node</em>, <em>R</em>, <em>O</em>, <em>T</em>, <em>S</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Tree.update_lower_bound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.update_lower_bound" title="Permalink to this definition">¶</a></dt>
 <dd><p>Update the lower bound of <cite>node</cite>.</p>
 <p>We propagate the lower bounds of the fringe nodes up the tree with these equations:</p>
 <div class="math">
-<p><img src="../_images/math/2251bae5723b681a4348ef54e1519a50ce62dec4.png" alt="L_T(b) = \begin{cases} L(b), &amp; \text{if} b \in F(T) \\ \text{max}_{a \in A} L_T(b,a), &amp; \text{otherwise}\end{cases}
+<p><img src="../_images/math/2bd569210afa4807f16cfc53f9e16b03cf231f21.png" alt="L_T(b) = \begin{cases} L(b), &amp; \text{if } b \in F(T) \\ \text{max}_{a \in A} L_T(b,a), &amp; \text{otherwise}\end{cases}
 
 L_T(b,a) = R_B(b,a) + \gamma \sum_{z \in Z} \text{Pr}(z | b,a)L_T(\tau(b,a,z))"/></p>
-</div><table class="docutils field-list" frame="void" rules="none">
+</div><p>F(T) is the set of fringe nodes in tree T, L_T(b) represents the lower bound on V&#8217;(b) associated to belief state b,
+L_T(b,a) represents the corresponding bound on Q*(b,a), and L(b) is the bound of a fringe node.</p>
+<table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>node</strong> &#8211; </td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>node</strong> (<a class="reference internal" href="#PDHS.and_or_tree.AO_Tree.Node" title="PDHS.and_or_tree.AO_Tree.Node"><em>Node</em></a>) &#8211; the node whose lower bound should be updated</li>
+<li><strong>R</strong> (<em>Dict[tuple[ACTION,STATE], float]</em>) &#8211; Mapping from action/state tuple to a payoff real value. Represents the immediate payoff of taking an action in a state.</li>
+<li><strong>O</strong> (<em>dict[str, dict[str, dict[str, float]]]</em>) &#8211; The observation function that maps a state to an action to an observation to a probability. Represents the conditional probability of observing w given state s and action a.</li>
+<li><strong>T</strong> (<em>dict[str, dict[str, dict[str, float]]]</em>) &#8211; The transition function that maps a state to an action to a state to a probability. Represents the conditional probability of transitioning from state s to s&#8217; given action a.</li>
+<li><strong>S</strong> (<em>list[str]</em>) &#8211; The states of the POMDP.</li>
+</ul>
+</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PDHS.and_or_tree.AO_Tree.Tree.update_upper_bound">
+<code class="descname">update_upper_bound</code><span class="sig-paren">(</span><em>node</em>, <em>R</em>, <em>O</em>, <em>T</em>, <em>S</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/PDHS/and_or_tree/AO_Tree.html#Tree.update_upper_bound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#PDHS.and_or_tree.AO_Tree.Tree.update_upper_bound" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the upper bound of <cite>node</cite>.</p>
+<p>We propagate the upper bounds of the fringe nodes up the tree with these equations:</p>
+<div class="math">
+<p><img src="../_images/math/b178fcc4dead3b550edb154e852f10fed5451348.png" alt="U_T(b) = \begin{cases}U(b), &amp; \text{if } b \in F(T) \\ \text{max}_{a \in A} U_T(b,a), &amp; \text{otherwise}\end{cases}
+
+U_T(b,a) = R_B(b,a) + \gamma \sum_{z \in Z} \text{Pr}(z | b,a)U_T(\tau(b,a,z))"/></p>
+</div><p>F(T) is the set of fringe nodes in tree T, U_T(b) represents the upper bound on V&#8217;(b) associated to belief state b,
+U_T(b,a) represents the corresponding bound on Q*(b,a), and U(b) is the bound of a fringe node.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>node</strong> (<a class="reference internal" href="#PDHS.and_or_tree.AO_Tree.Node" title="PDHS.and_or_tree.AO_Tree.Node"><em>Node</em></a>) &#8211; the node whose upper bound will be updated.</li>
+<li><strong>R</strong> (<em>Dict[tuple[ACTION,STATE], float]</em>) &#8211; Mapping from action/state tuple to a payoff real value. Represents the immediate payoff of taking an action in a state.</li>
+<li><strong>O</strong> (<em>dict[str, dict[str, dict[str, float]]]</em>) &#8211; The observation function that maps a state to an action to an observation to a probability. Represents the conditional probability of observing w given state s and action a.</li>
+<li><strong>T</strong> (<em>dict[str, dict[str, dict[str, float]]]</em>) &#8211; The transition function that maps a state to an action to a state to a probability. Represents the conditional probability of transitioning from state s to s&#8217; given action a.</li>
+<li><strong>S</strong> (<em>list[str]</em>) &#8211; The states of the POMDP.</li>
+</ul>
+</td>
 </tr>
 </tbody>
 </table>

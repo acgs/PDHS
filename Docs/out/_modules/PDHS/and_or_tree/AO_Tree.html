@@ -38,7 +38,7 @@
           <div class="body" role="main">
             
   <h1>Source code for PDHS.and_or_tree.AO_Tree</h1><div class="highlight"><pre>
-<span class="kn">from</span> <span class="nn">Heuristics.Bounds</span> <span class="kn">import</span> <span class="n">LowerBound</span><span class="p">,</span> <span class="n">UpperBound</span>
+<span class="kn">from</span> <span class="nn">Heuristics.Bounds</span> <span class="kn">import</span> <span class="n">LowerBound</span><span class="p">,</span> <span class="n">UpperBound</span><span class="p">,</span> <span class="n">Bound</span>
 
 <span class="n">__author__</span> <span class="o">=</span> <span class="s">&#39;Victor Szczepanski&#39;</span>
 
@@ -66,6 +66,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">actions</span> <span class="o">=</span> <span class="n">actions</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">observations</span> <span class="o">=</span> <span class="n">observations</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fringe</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fringe_beliefs</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">belief_state</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">U</span> <span class="o">=</span> <span class="n">upper_bound_function</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">L</span> <span class="o">=</span> <span class="n">lower_bound_function</span>
 
@@ -88,9 +89,8 @@
 
         <span class="n">size</span> <span class="o">+=</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">actions</span><span class="p">)</span> <span class="o">+</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">observations</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">size</span>
-
 </div>
-<div class="viewcode-block" id="Tree.expand"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Tree.expand">[docs]</a>    <span class="k">def</span> <span class="nf">expand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">O</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">T</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">S</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<div class="viewcode-block" id="Tree.expand"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Tree.expand">[docs]</a>    <span class="k">def</span> <span class="nf">expand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">O</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">T</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">S</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">R</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
         <span class="sd">r&quot;&quot;&quot;Expand a given node in this tree.</span>
 
 <span class="sd">        Expands a node as described in &quot;Online Planning Algorithms for POMDPs&quot; by Ross, Pineau, et. al, Journal of Artifical Intelligence Research 32, (2008), 663-704.</span>
@@ -119,13 +119,19 @@
 <span class="sd">            O (dict[str, dict[str, dict[str, float]]]): The observation function that maps a state to an action to an observation to a probability. Represents the conditional probability of observing w given state s and action a.</span>
 <span class="sd">            T (dict[str, dict[str, dict[str, float]]]): The transition function that maps a state to an action to a state to a probability. Represents the conditional probability of transitioning from state s to s&#39; given action a.</span>
 <span class="sd">            S (list[str]): The states of the POMDP.</span>
+<span class="sd">            R (Dict[tuple[ACTION,STATE], float]): Mapping from action/state tuple to a payoff real value. Represents the immediate payoff of taking an action in a state.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="c">#First remove node from fringe.</span>
+        <span class="c"># First remove node from fringe.</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">fringe</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Cannot expand a node that is not in the fringe of the tree.&quot;</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fringe_beliefs</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">belief_state</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Cannot expand a node whose belief state is not in the fringe.&quot;</span><span class="p">)</span>
 
         <span class="c">#Generate AND_Nodes for every action</span>
         <span class="n">and_children</span> <span class="o">=</span> <span class="p">[]</span>
@@ -147,50 +153,151 @@
                 <span class="c"># probability of reaching new_child is the probability of reaching node * Pr(z | b,a)</span>
                 <span class="n">reach_probability</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">reach_probability</span><span class="o">*</span><span class="n">obs_prob</span>
 
-                <span class="n">new_child</span> <span class="o">=</span> <span class="n">OR_Node</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">and_child</span><span class="p">,</span> <span class="n">belief_state</span><span class="o">=</span><span class="n">new_belief_state</span><span class="p">,</span><span class="n">obs_prob</span><span class="o">=</span><span class="n">obs_prob</span><span class="p">,</span>
+                <span class="n">new_child</span> <span class="o">=</span> <span class="n">OR_Node</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">and_child</span><span class="p">,</span> <span class="n">belief_state</span><span class="o">=</span><span class="n">new_belief_state</span><span class="p">,</span> <span class="n">obs_prob</span><span class="o">=</span><span class="n">obs_prob</span><span class="p">,</span>
                                     <span class="n">reach_probability</span><span class="o">=</span><span class="n">reach_probability</span><span class="p">,</span> <span class="n">lower_bound</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">L</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">new_belief_state</span><span class="p">),</span>
                                     <span class="n">upper_bound</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">U</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">new_belief_state</span><span class="p">))</span>
+
                 <span class="bp">self</span><span class="o">.</span><span class="n">fringe</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_child</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">fringe_beliefs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_child</span><span class="o">.</span><span class="n">belief_state</span><span class="p">)</span>
+
+        <span class="c">#We propagate after all children are created, so that we don&#39;t propagate information from fringe nodes that we only propagate once for each fringe node.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">propagate</span><span class="p">(</span><span class="n">R</span><span class="p">,</span> <span class="n">O</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">fringe_nodes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fringe</span><span class="p">)</span>
 </div>
-<div class="viewcode-block" id="Tree.propagate"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Tree.propagate">[docs]</a>    <span class="k">def</span> <span class="nf">propagate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fringe_nodes</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="p">[]):</span>
+<div class="viewcode-block" id="Tree.propagate"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Tree.propagate">[docs]</a>    <span class="k">def</span> <span class="nf">propagate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">O</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">fringe_nodes</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="p">[]):</span>
         <span class="sd">r&quot;&quot;&quot;Propagate upper and lower bound information to root.</span>
 
 <span class="sd">        Updates upper and lower bounds for ancestors of nodes in `fringe_nodes`.</span>
 
-<span class="sd">        And we propagate the upper bound as:</span>
+<span class="sd">        Args:</span>
+<span class="sd">            R (Dict[tuple[ACTION,STATE], float]): Mapping from action/state tuple to a payoff real value. Represents the immediate payoff of taking an action in a state.</span>
+<span class="sd">            O (dict[str, dict[str, dict[str, float]]]): The observation function that maps a state to an action to an observation to a probability. Represents the conditional probability of observing w given state s and action a.</span>
+<span class="sd">            T (dict[str, dict[str, dict[str, float]]]): The transition function that maps a state to an action to a state to a probability. Represents the conditional probability of transitioning from state s to s&#39; given action a.</span>
+<span class="sd">            S (list[str]): The states of the POMDP.</span>
+<span class="sd">            fringe_nodes Optional(list[OR_Node]): the nodes on the fringe from which to start bound propagation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">fringe_node</span> <span class="ow">in</span> <span class="n">fringe_nodes</span><span class="p">:</span>
+            <span class="n">node_ptr</span> <span class="o">=</span> <span class="n">fringe_node</span><span class="o">.</span><span class="n">parent</span>
+            <span class="sd">&quot;&quot;&quot;:type: Node&quot;&quot;&quot;</span>
+            <span class="k">while</span> <span class="n">node_ptr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">update_lower_bound</span><span class="p">(</span><span class="n">node_ptr</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">O</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">S</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">update_upper_bound</span><span class="p">(</span><span class="n">node_ptr</span><span class="p">)</span>
+                <span class="n">node_ptr</span> <span class="o">=</span> <span class="n">node_ptr</span><span class="o">.</span><span class="n">parent</span>
+</div>
+<div class="viewcode-block" id="Tree.update_lower_bound"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Tree.update_lower_bound">[docs]</a>    <span class="k">def</span> <span class="nf">update_lower_bound</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">O</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">S</span><span class="p">):</span>
+        <span class="sd">r&quot;&quot;&quot;Update the lower bound of `node`.</span>
+
+<span class="sd">        We propagate the lower bounds of the fringe nodes up the tree with these equations:</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            L_T(b) = \begin{cases} L(b), &amp; \text{if } b \in F(T) \\ \text{max}_{a \in A} L_T(b,a), &amp; \text{otherwise}\end{cases}</span>
+
+<span class="sd">            L_T(b,a) = R_B(b,a) + \gamma \sum_{z \in Z} \text{Pr}(z | b,a)L_T(\tau(b,a,z))</span>
+
+
+<span class="sd">        F(T) is the set of fringe nodes in tree T, L_T(b) represents the lower bound on V&#39;(b) associated to belief state b,</span>
+<span class="sd">        L_T(b,a) represents the corresponding bound on Q*(b,a), and L(b) is the bound of a fringe node.</span>
+
+
+<span class="sd">        Args:</span>
+<span class="sd">            node (Node): the node whose lower bound should be updated</span>
+<span class="sd">            R (Dict[tuple[ACTION,STATE], float]): Mapping from action/state tuple to a payoff real value. Represents the immediate payoff of taking an action in a state.</span>
+<span class="sd">            O (dict[str, dict[str, dict[str, float]]]): The observation function that maps a state to an action to an observation to a probability. Represents the conditional probability of observing w given state s and action a.</span>
+<span class="sd">            T (dict[str, dict[str, dict[str, float]]]): The transition function that maps a state to an action to a state to a probability. Represents the conditional probability of transitioning from state s to s&#39; given action a.</span>
+<span class="sd">            S (list[str]): The states of the POMDP.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">node</span><span class="o">.</span><span class="n">lower_bound</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bound_t</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">belief_state</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">O</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">L</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Tree.update_upper_bound"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Tree.update_upper_bound">[docs]</a>    <span class="k">def</span> <span class="nf">update_upper_bound</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">O</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">S</span><span class="p">):</span>
+        <span class="sd">r&quot;&quot;&quot;Update the upper bound of `node`.</span>
+
+<span class="sd">        We propagate the upper bounds of the fringe nodes up the tree with these equations:</span>
 
 <span class="sd">        .. math::</span>
 <span class="sd">            U_T(b) = \begin{cases}U(b), &amp; \text{if } b \in F(T) \\ \text{max}_{a \in A} U_T(b,a), &amp; \text{otherwise}\end{cases}</span>
 
 <span class="sd">            U_T(b,a) = R_B(b,a) + \gamma \sum_{z \in Z} \text{Pr}(z | b,a)U_T(\tau(b,a,z))</span>
 
-<span class="sd">        In both cases, F(T) is the set of fringe nodes in tree T, U_T(b) and L_T(b) represent upper and lower bounds on V&#39;(b) associated to belief state b,</span>
-<span class="sd">        U_T(b,a) and L_T(b,a) represent corresponding bounds on Q*(b,a), and L(b) and U(b) are the bounds of the fringe nodes.</span>
-
-
+<span class="sd">        F(T) is the set of fringe nodes in tree T, U_T(b) represents the upper bound on V&#39;(b) associated to belief state b,</span>
+<span class="sd">        U_T(b,a) represents the corresponding bound on Q*(b,a), and U(b) is the bound of a fringe node.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            fringe_nodes (list[OR_Node]): the nodes on the fringe from which to start bound propagation.</span>
+<span class="sd">            node (Node): the node whose upper bound will be updated.</span>
+<span class="sd">            R (Dict[tuple[ACTION,STATE], float]): Mapping from action/state tuple to a payoff real value. Represents the immediate payoff of taking an action in a state.</span>
+<span class="sd">            O (dict[str, dict[str, dict[str, float]]]): The observation function that maps a state to an action to an observation to a probability. Represents the conditional probability of observing w given state s and action a.</span>
+<span class="sd">            T (dict[str, dict[str, dict[str, float]]]): The transition function that maps a state to an action to a state to a probability. Represents the conditional probability of transitioning from state s to s&#39; given action a.</span>
+<span class="sd">            S (list[str]): The states of the POMDP.</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">for</span> <span class="n">fringe_node</span> <span class="ow">in</span> <span class="n">fringe_nodes</span><span class="p">:</span>
-            <span class="n">node_ptr</span> <span class="o">=</span> <span class="n">fringe_node</span><span class="o">.</span><span class="n">parent</span>
-            <span class="k">while</span> <span class="n">node_ptr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">update_lower_bound</span><span class="p">(</span><span class="n">node_ptr</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">update_upper_bound</span><span class="p">(</span><span class="n">node_ptr</span><span class="p">)</span>
+        <span class="n">node</span><span class="o">.</span><span class="n">upper_bound</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bound_t</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">belief_state</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">O</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">U</span><span class="p">)</span>
 </div>
-<div class="viewcode-block" id="Tree.update_lower_bound"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Tree.update_lower_bound">[docs]</a>    <span class="k">def</span> <span class="nf">update_lower_bound</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
-        <span class="sd">r&quot;&quot;&quot;Update the lower bound of `node`.</span>
+<div class="viewcode-block" id="Tree.bound_t"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Tree.bound_t">[docs]</a>    <span class="k">def</span> <span class="nf">bound_t</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">belief_state</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">O</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">fringe_function</span><span class="p">:</span> <span class="n">Bound</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Abstract update to upper bound and lower bound.</span>
 
-<span class="sd">        We propagate the lower bounds of the fringe nodes up the tree with these equations:</span>
+<span class="sd">        By taking a function parameter, abstract the calculation for bound propagation.</span>
 
-<span class="sd">        .. math::</span>
-<span class="sd">            L_T(b) = \begin{cases} L(b), &amp; \text{if} b \in F(T) \\ \text{max}_{a \in A} L_T(b,a), &amp; \text{otherwise}\end{cases}</span>
+<span class="sd">        If `belief_state` is a fringe belief, we use `fringe_function` to calculate its bound.</span>
+<span class="sd">        Thus, if `fringe_function` is a ``Lower_Bound``, `bound_t` calculates the lower bound.</span>
 
-<span class="sd">            L_T(b,a) = R_B(b,a) + \gamma \sum_{z \in Z} \text{Pr}(z | b,a)L_T(\tau(b,a,z))</span>
-<span class="sd">        :param node:</span>
-<span class="sd">        :return:</span>
+<span class="sd">        Args:</span>
+<span class="sd">            belief_state (list[float]): the belief state to use for updating</span>
+<span class="sd">            R (Dict[tuple[ACTION,STATE], float]): Mapping from action/state tuple to a payoff real value. Represents the immediate payoff of taking an action in a state.</span>
+<span class="sd">            O (dict[str, dict[str, dict[str, float]]]): The observation function that maps a state to an action to an observation to a probability. Represents the conditional probability of observing w given state s and action a.</span>
+<span class="sd">            T (dict[str, dict[str, dict[str, float]]]): The transition function that maps a state to an action to a state to a probability. Represents the conditional probability of transitioning from state s to s&#39; given action a.</span>
+<span class="sd">            S (list[str]): The states of the POMDP.</span>
+<span class="sd">            fringe_function (Bound): A Bound that exposes a value method to use for fringe node Bound calculation.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            float: The new bound for the node corresponding to the belief state `belief_state`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">belief_state</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fringe_beliefs</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">fringe_function</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">belief_state</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_bound</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">actions</span><span class="p">:</span>
+                <span class="n">bound_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bound_action</span><span class="p">(</span><span class="n">belief_state</span><span class="o">=</span><span class="n">belief_state</span><span class="p">,</span>
+                                            <span class="n">R</span><span class="o">=</span><span class="n">R</span><span class="p">,</span> <span class="n">O</span><span class="o">=</span><span class="n">O</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">S</span><span class="o">=</span><span class="n">S</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="n">action</span><span class="p">,</span> <span class="n">fringe_function</span><span class="o">=</span><span class="n">fringe_function</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">bound_t</span> <span class="o">&gt;</span> <span class="n">new_bound</span><span class="p">:</span>
+                    <span class="n">new_bound</span> <span class="o">=</span> <span class="n">bound_t</span>
+            <span class="k">return</span> <span class="n">new_bound</span>
+</div>
+<div class="viewcode-block" id="Tree.bound_action"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Tree.bound_action">[docs]</a>    <span class="k">def</span> <span class="nf">bound_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">belief_state</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">O</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">fringe_function</span><span class="p">):</span>
+        <span class="sd">r&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the sub-function used by bound_t.</span>
 
+<span class="sd">        Implement:</span>
+<span class="sd">        </span>
+<span class="sd">        .. math::</span>
+<span class="sd">            B_T(b,a) = R_B(b,a) + \gamma \sum_{z \in Z} \text{Pr}(z | b,a)B_T(\tau(b,a,z))</span>
+
+<span class="sd">            R_B(beliefstate, action) = \sum_{s \in S} b(s)R(s,a)</span>
+
+
+<span class="sd">        Where B_T is a generic bound - the true bound is given by `fringe_function` -</span>
+<span class="sd">        if it is a lower bound, calculates L_T, if it is an upper bound, calculates U_T.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            belief_state (list[float]): the belief state to use for updating</span>
+<span class="sd">            R (Dict[tuple[ACTION,STATE], float]): Mapping from action/state tuple to a payoff real value. Represents the immediate payoff of taking an action in a state.</span>
+<span class="sd">            O (dict[str, dict[str, dict[str, float]]]): The observation function that maps a state to an action to an observation to a probability. Represents the conditional probability of observing w given state s and action a.</span>
+<span class="sd">            T (dict[str, dict[str, dict[str, float]]]): The transition function that maps a state to an action to a state to a probability. Represents the conditional probability of transitioning from state s to s&#39; given action a.</span>
+<span class="sd">            S (list[str]): The states of the POMDP.</span>
+<span class="sd">            action (str): The action to calculate the bound with.</span>
+<span class="sd">            fringe_function (Bound): A Bound that exposes a value method to use for fringe node Bound calculation.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            float: B_T(`belief_state`, `action`) - the bound for this `belief_state`, `action` pair.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">weighted_lower_bound</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">observation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">observations</span><span class="p">:</span>
+            <span class="n">weighted_lower_bound</span> <span class="o">+=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pr_z</span><span class="p">(</span><span class="n">observation</span><span class="o">=</span><span class="n">observation</span><span class="p">,</span> <span class="n">belief_state</span><span class="o">=</span><span class="n">belief_state</span><span class="p">,</span>
+                                               <span class="n">action</span><span class="o">=</span><span class="n">action</span><span class="p">,</span> <span class="n">O</span><span class="o">=</span><span class="n">O</span><span class="p">,</span> <span class="n">S</span><span class="o">=</span><span class="n">S</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">)</span> <span class="o">*</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">bound_t</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tau</span><span class="p">(</span><span class="n">belief_state</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="n">action</span><span class="p">,</span>
+                                                           <span class="n">observation</span><span class="o">=</span><span class="n">observation</span><span class="p">,</span> <span class="n">O</span><span class="o">=</span><span class="n">O</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">S</span><span class="o">=</span><span class="n">S</span><span class="p">),</span>
+                                                  <span class="n">R</span><span class="p">,</span> <span class="n">O</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">fringe_function</span><span class="o">=</span><span class="n">fringe_function</span><span class="p">)</span>
+                                     <span class="p">)</span>
+
+        <span class="c"># We calculate R_B(belief_state, action) here, from R.</span>
+        <span class="n">R_B</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">belief</span><span class="o">*</span><span class="n">R</span><span class="p">[(</span><span class="n">S</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">action</span><span class="p">)]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">belief</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">belief_state</span><span class="p">)])</span>
+        <span class="k">return</span> <span class="n">R_B</span> <span class="o">+</span> <span class="n">weighted_lower_bound</span>
 </div>
 <div class="viewcode-block" id="Tree.pr_z"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Tree.pr_z">[docs]</a>    <span class="k">def</span> <span class="nf">pr_z</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">observation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">belief_state</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">O</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">T</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">S</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
         <span class="sd">r&quot;&quot;&quot;Implement the Pr(z | b, a) function.</span>
@@ -224,7 +331,7 @@
 
         <span class="k">return</span> <span class="n">pr_z</span>
 </div>
-<div class="viewcode-block" id="Tree.tau"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Tree.tau">[docs]</a>    <span class="k">def</span> <span class="nf">tau</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">observation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">O</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">T</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">S</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<div class="viewcode-block" id="Tree.tau"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Tree.tau">[docs]</a>    <span class="k">def</span> <span class="nf">tau</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">belief_state</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">observation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">O</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">T</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">S</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
         <span class="sd">r&quot;&quot;&quot;Implement the tau function for computing belief update.</span>
 
 <span class="sd">        Implements the function:</span>
@@ -251,7 +358,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">z</span> <span class="o">=</span> <span class="n">observation</span>
         <span class="sd">&quot;&quot;&quot;:type: str&quot;&quot;&quot;</span>
-        <span class="n">b</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">belief_state</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="n">belief_state</span>
         <span class="sd">&quot;&quot;&quot;:type: list[float]&quot;&quot;&quot;</span>
         <span class="n">a</span> <span class="o">=</span> <span class="n">action</span>
         <span class="sd">&quot;&quot;&quot;:type: str&quot;&quot;&quot;</span>
@@ -275,6 +382,7 @@
             <span class="n">new_belief_state</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">temp</span> <span class="o">*</span> <span class="n">transition_sum</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">new_belief_state</span>
+
 </div></div>
 <div class="viewcode-block" id="Node"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.Node">[docs]</a><span class="k">class</span> <span class="nc">Node</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Represent a Node in an AO_Tree.</span>
@@ -292,16 +400,20 @@
 <span class="sd">        children (list[Node]): children of this Node.</span>
 <span class="sd">        upper_bound (float): Upper bound for this Node. May be updated when a new node is expanded in the AO_Tree.</span>
 <span class="sd">        lower_bound (float): Lower bound of this Node. May be updated when a new node is expanded in the AO_Tree.</span>
+<span class="sd">        initial_upper_bound (float): The initial upper bound. Will not be changed when this node is expanded.</span>
+<span class="sd">        initial_lower_bound (float): The initial lower bound. Will not be changed when this node is expanded.</span>
 <span class="sd">        depth (int): current depth (measured from root) of this Node.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">children</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="p">[],</span> <span class="n">upper_bound</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">lower_bound</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">children</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="p">(),</span> <span class="n">upper_bound</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">lower_bound</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="n">parent</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">children</span> <span class="o">=</span> <span class="n">children</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">upper_bound</span> <span class="o">=</span> <span class="n">upper_bound</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lower_bound</span> <span class="o">=</span> <span class="n">lower_bound</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">depth</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_lower_bound</span> <span class="o">=</span> <span class="n">lower_bound</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_upper_bound</span> <span class="o">=</span> <span class="n">upper_bound</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_update_depth</span><span class="p">()</span>
 
@@ -350,6 +462,7 @@
 <span class="sd">        :return:</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="mi">0</span>
+
 </div>
 <div class="viewcode-block" id="OR_Node"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.OR_Node">[docs]</a><span class="k">class</span> <span class="nc">OR_Node</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Subclass Node to include belief state.</span>
@@ -362,9 +475,9 @@
 <span class="sd">        obs_prob (float): the probability of the observation that gave rise to this OR_Node.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">:</span> <span class="n">Node</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">children</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="p">[],</span> <span class="n">upper_bound</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">lower_bound</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
-                 <span class="n">belief_state</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="p">[],</span> <span class="n">reach_probability</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">obs_prob</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">Node</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">children</span><span class="p">,</span> <span class="n">upper_bound</span><span class="p">,</span> <span class="n">lower_bound</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="p">:</span> <span class="n">Node</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">children</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="p">(),</span> <span class="n">upper_bound</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">lower_bound</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                 <span class="n">belief_state</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="p">(),</span> <span class="n">reach_probability</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">obs_prob</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">children</span><span class="p">,</span> <span class="n">upper_bound</span><span class="p">,</span> <span class="n">lower_bound</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">belief_state</span> <span class="o">=</span> <span class="n">belief_state</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">reach_probability</span> <span class="o">=</span> <span class="n">reach_probability</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">obs_prob</span> <span class="o">=</span> <span class="n">obs_prob</span>
@@ -385,6 +498,18 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">depth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">depth</span> <span class="o">+</span> <span class="mi">1</span>
 
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;OR_Node.&#39;</span><span class="p">]</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;Belief state: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">belief_state</span><span class="p">))</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;Reach probability: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reach_probability</span><span class="p">))</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;observation probability: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_prob</span><span class="p">))</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;Value: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;Upper Bound: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">upper_bound</span><span class="p">))</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;Lower Bound: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lower_bound</span><span class="p">))</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;Parent: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="p">))</span>
+        <span class="k">return</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+
+
 </div>
 <div class="viewcode-block" id="AND_Node"><a class="viewcode-back" href="../../../rsts/PDHS.and_or_tree.AO_Tree.html#PDHS.and_or_tree.AO_Tree.AND_Node">[docs]</a><span class="k">class</span> <span class="nc">AND_Node</span><span class="p">(</span><span class="n">Node</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Subclass Node to include action choice.</span>
@@ -396,8 +521,8 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">children</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="p">[],</span> <span class="n">upper_bound</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">lower_bound</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">Node</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">children</span><span class="p">,</span> <span class="n">upper_bound</span><span class="p">,</span> <span class="n">lower_bound</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">children</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="p">(),</span> <span class="n">upper_bound</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">lower_bound</span><span class="p">:</span> <span class="nb">float</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">children</span><span class="p">,</span> <span class="n">upper_bound</span><span class="p">,</span> <span class="n">lower_bound</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">action</span> <span class="o">=</span> <span class="n">action</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">successors</span> <span class="o">=</span> <span class="p">[]</span>
 
