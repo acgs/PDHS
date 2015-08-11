@@ -1,4 +1,5 @@
 from Heuristics.Bounds import LowerBound, UpperBound, Bound
+from and_or_tree.utils import memoize
 
 __author__ = 'Victor Szczepanski'
 
@@ -21,7 +22,7 @@ class Tree(object):
         fringe (list[OR_Node]): The fringe nodes that can be chosen for expansion.
     """
 
-    def __init__(self, root, upper_bound_function: UpperBound, lower_bound_function: LowerBound, actions: list=[], observations: list=[]):
+    def __init__(self, root, upper_bound_function: UpperBound, lower_bound_function: LowerBound, actions: list, observations: list):
         self.root = root
         self.actions = actions
         self.observations = observations
@@ -50,7 +51,7 @@ class Tree(object):
         size += sys.getsizeof(self.actions) + sys.getsizeof(self.observations)
         return size
 
-    def expand(self, node, O: dict, T: dict, S: list, R: dict):
+    def expand(self, node, gamma, O: dict, T: dict, S: list, R: dict):
         r"""Expand a given node in this tree.
 
         Expands a node as described in "Online Planning Algorithms for POMDPs" by Ross, Pineau, et. al, Journal of Artifical Intelligence Research 32, (2008), 663-704.
@@ -81,7 +82,6 @@ class Tree(object):
             S (list[str]): The states of the POMDP.
             R (Dict[tuple[ACTION,STATE], float]): Mapping from action/state tuple to a payoff real value. Represents the immediate payoff of taking an action in a state.
         """
-
         # First remove node from fringe.
         try:
             self.fringe.remove(node)
@@ -98,15 +98,14 @@ class Tree(object):
         """:type : list[AND_Node]"""
 
         for action in self.actions:
-            new_child = AND_Node(parent=node, action=action)
+            new_child = AND_Node(parent=node, action=action, belief_state=node.belief_state)
             and_children.append(new_child)
-
         # for each new AND_Node, create an OR_Node and compute its belief state according to:
         # b_t(s') = \tau(b_{t-1}, a_{t-1}, z_t)(s')
         for and_child in and_children: #iterate over all new AND_Nodes.
             a = and_child.action
             for observation in self.observations:  # this generates each child of the and_child
-                new_belief_state = self.tau(node=node, action=a, observation=observation, O=O, T=T, S=S)
+                new_belief_state = self.tau(belief_state=node.belief_state, action=a, observation=observation, O=O, T=T, S=S)
                 obs_prob = self.pr_z(observation=observation, belief_state=node.belief_state, action=a,
                                      O=O, T=T, S=S)
 
@@ -115,15 +114,21 @@ class Tree(object):
 
                 new_child = OR_Node(parent=and_child, belief_state=new_belief_state, obs_prob=obs_prob,
                                     reach_probability=reach_probability, lower_bound=self.L.value(new_belief_state),
-                                    upper_bound=self.U.value(new_belief_state))
+                                    upper_bound=self.U.value(new_belief_state), observation=observation)
 
                 self.fringe.append(new_child)
                 self.fringe_beliefs.append(new_child.belief_state)
+                print("New fringe: {}".format(self.fringe))
+                print("New fringe beliefs: {}".format(self.fringe_beliefs))
 
         #We propagate after all children are created, so that we don't propagate information from fringe nodes that we only propagate once for each fringe node.
-        self.propagate(R, O, T, S, fringe_nodes=self.fringe)
+        fringe_upper_bounds = [n.upper_bound for n in self.fringe]
+        fringe_lower_bounds = [n.lower_bound for n in self.fringe]
+        self.propagate(gamma, R, O, T, S, fringe_nodes=self.fringe)
+        assert fringe_lower_bounds == [n.lower_bound for n in self.fringe]
+        assert fringe_upper_bounds == [n.upper_bound for n in self.fringe]
 
-    def propagate(self, R, O, T, S, fringe_nodes: list=[]):
+    def propagate(self, gamma, R, O, T, S, fringe_nodes: list=[]):
         r"""Propagate upper and lower bound information to root.
 
         Updates upper and lower bounds for ancestors of nodes in `fringe_nodes`.
@@ -139,11 +144,11 @@ class Tree(object):
             node_ptr = fringe_node.parent
             """:type: Node"""
             while node_ptr is not None:
-                self.update_lower_bound(node_ptr, R, O, T, S)
-                self.update_upper_bound(node_ptr)
+                self.update_lower_bound(node_ptr, gamma, R=R, O=O, T=T, S=S)
+                self.update_upper_bound(node_ptr, gamma, R=R, O=O, T=T, S=S)
                 node_ptr = node_ptr.parent
 
-    def update_lower_bound(self, node, R, O, T, S):
+    def update_lower_bound(self, node, gamma, R, O, T, S):
         r"""Update the lower bound of `node`.
 
         We propagate the lower bounds of the fringe nodes up the tree with these equations:
@@ -165,9 +170,12 @@ class Tree(object):
             T (dict[str, dict[str, dict[str, float]]]): The transition function that maps a state to an action to a state to a probability. Represents the conditional probability of transitioning from state s to s' given action a.
             S (list[str]): The states of the POMDP.
         """
-        node.lower_bound = self.bound_t(node.belief_state, R, O, T, S, self.L)
+        if type(node) is OR_Node and node not in self.fringe:
+            node.lower_bound = max([child.lower_bound for child in node.children])
+        else:
+            node.lower_bound = self.bound_t(node.belief_state, gamma, R, O, T, S, self.L)
 
-    def update_upper_bound(self, node, R, O, T, S):
+    def update_upper_bound(self, node, gamma, R, O, T, S):
         r"""Update the upper bound of `node`.
 
         We propagate the upper bounds of the fringe nodes up the tree with these equations:
@@ -188,9 +196,12 @@ class Tree(object):
             S (list[str]): The states of the POMDP.
 
         """
-        node.upper_bound = self.bound_t(node.belief_state, R, O, T, S, self.U)
+        if type(node) is OR_Node and node not in self.fringe:
+            node.upper_bound = max([child.upper_bound for child in node.children])
+        else:
+            node.upper_bound = self.bound_t(node.belief_state, gamma, R, O, T, S, self.U)
 
-    def bound_t(self, belief_state, R, O, T, S, fringe_function: Bound):
+    def bound_t(self, belief_state, gamma, R, O, T, S, fringe_function: Bound):
         """Abstract update to upper bound and lower bound.
 
         By taking a function parameter, abstract the calculation for bound propagation.
@@ -214,13 +225,13 @@ class Tree(object):
         else:
             new_bound = 0
             for action in self.actions:
-                bound_t = self.bound_action(belief_state=belief_state,
+                bound_t = self.bound_action(belief_state=belief_state, gamma=gamma,
                                             R=R, O=O, T=T, S=S, action=action, fringe_function=fringe_function)
                 if bound_t > new_bound:
                     new_bound = bound_t
             return new_bound
 
-    def bound_action(self, belief_state, R, O, T, S, action, fringe_function):
+    def bound_action(self, belief_state, gamma, R, O, T, S, action, fringe_function):
         r"""
         Calculate the sub-function used by bound_t.
 
@@ -250,15 +261,21 @@ class Tree(object):
         for observation in self.observations:
             weighted_lower_bound += (self.pr_z(observation=observation, belief_state=belief_state,
                                                action=action, O=O, S=S, T=T) *
-                                     self.bound_t(self.tau(belief_state, action=action,
+                                     self.bound_t(self.tau(belief_state=belief_state, action=action,
                                                            observation=observation, O=O, T=T, S=S),
-                                                  R, O, T, S, fringe_function=fringe_function)
+                                                  gamma, R, O, T, S, fringe_function=fringe_function)
                                      )
 
         # We calculate R_B(belief_state, action) here, from R.
-        R_B = sum([belief*R[(S[i], action)] for i, belief in enumerate(belief_state)])
-        return R_B + weighted_lower_bound
+        R_B = self.R_B(belief_state=belief_state, action=action, S=S, R=R)
+        return R_B + float(gamma)*weighted_lower_bound
 
+
+    @memoize
+    def R_B(self, belief_state, action, S, R):
+        return sum([belief*float(R[(action, S[i])]) for i, belief in enumerate(belief_state)])
+
+    @memoize
     def pr_z(self, observation: str, belief_state: list, action: str, O: dict, T: dict, S: list):
         r"""Implement the Pr(z | b, a) function.
 
@@ -283,14 +300,15 @@ class Tree(object):
         #calculate Pr(z | b,a)
         pr_z = 0.0
         for s_prime in S:
-            new_observation = O[s_prime][a][z]  # TODO: In Shun's proposed model, O takes 4 parameters - s (current state) is also required.
+            new_observation = float(O[z][(a, s_prime)])#[s_prime][a][z]  # TODO: In Shun's proposed model, O takes 4 parameters - s (current state) is also required.
             transition_prob = 0
             for s_index, s in enumerate(S):
                 transition_prob += T[s][a][s_prime] * b[s_index]
             pr_z += new_observation * transition_prob
-
+        print("pr_z({} | {}, {}) = {}".format(z, b, a, pr_z))
         return pr_z
 
+    @memoize
     def tau(self, belief_state, action: str, observation: str, O: dict, T: dict, S: list):
         r"""Implement the tau function for computing belief update.
 
@@ -330,7 +348,7 @@ class Tree(object):
 
             #calculate tau
             normalizing_factor = 1.0/pr_z
-            temp = normalizing_factor * O[s_prime][a][observation]
+            temp = normalizing_factor * float(O[observation][(a, s_prime)])#[s_prime][a][observation]
             """\frac{1}{Pr(z | b, a)} * O(s', a, z)"""
 
             transition_sum = 0
@@ -340,6 +358,8 @@ class Tree(object):
                 transition_sum += T[s][a][s_prime] * b[s_index]
 
             new_belief_state.append(temp * transition_sum)
+
+        print("tau({},{},{}) = {}".format(b,a,z,new_belief_state))
 
         return new_belief_state
 
@@ -366,14 +386,15 @@ class Node(object):
 
     """
 
-    def __init__(self, parent=None, children: list=(), upper_bound: float=0.0, lower_bound: float=0.0):
+    def __init__(self, parent=None, children: list=(), upper_bound: float=0.0, lower_bound: float=0.0, belief_state=()):
         self.parent = parent
-        self.children = children
+        self.children = list(children)
         self.upper_bound = upper_bound
         self.lower_bound = lower_bound
         self.depth = 0
         self.initial_lower_bound = lower_bound
         self.initial_upper_bound = upper_bound
+        self.belief_state = list(belief_state)
 
         self._update_depth()
 
@@ -389,7 +410,7 @@ class Node(object):
             node (Node): the new parent of this Node.
 
         """
-        if self.parent is not None:
+        if self.parent is not None and self.parent is not node:
             self.parent.children.remove(self)
 
         self.parent = node
@@ -436,15 +457,15 @@ class OR_Node(Node):
     """
 
     def __init__(self, parent: Node=None, children: list=(), upper_bound: float=0.0, lower_bound: float=0.0,
-                 belief_state: list=(), reach_probability: float=0.0, obs_prob: float=0.0):
-        super().__init__(parent, children, upper_bound, lower_bound)
-        self.belief_state = belief_state
+                 belief_state: list=(), reach_probability: float=0.0, obs_prob: float=0.0, observation=None):
+        super().__init__(parent, children, upper_bound, lower_bound, belief_state)
         self.reach_probability = reach_probability
         self.obs_prob = obs_prob
-        self.value = 0  # the expand function of Tree will need to update value, since it depends on V.
+        self._value = 0  # the expand function of Tree will need to update value, since it depends on V.
+        self.observation = observation
 
     def value(self):
-        return self.value
+        return self._value
 
     def _size(self):
         return sum([sys.getsizeof(elem) for elem in self.belief_state])
@@ -459,14 +480,17 @@ class OR_Node(Node):
             self.depth = self.parent.depth + 1
 
     def __str__(self):
-        s = ['OR_Node.']
+        s = ['\nOR_Node.']
         s.append('Belief state: {}'.format(self.belief_state))
+        if self.observation is not None:
+            s.append('Observation: {}'.format(self.observation))
         s.append('Reach probability: {}'.format(self.reach_probability))
         s.append('observation probability: {}'.format(self.obs_prob))
-        s.append('Value: {}'.format(self.value))
+        s.append('Value: {}'.format(self.value()))
         s.append('Upper Bound: {}'.format(self.upper_bound))
         s.append('Lower Bound: {}'.format(self.lower_bound))
         s.append('Parent: {}'.format(self.parent))
+        s.append('\n')
         return '\n'.join(s)
 
 
@@ -481,8 +505,8 @@ class AND_Node(Node):
 
     """
 
-    def __init__(self, parent=None, children: list=(), upper_bound: float=0.0, lower_bound: float=0.0, action: str=None):
-        super().__init__(parent, children, upper_bound, lower_bound)
+    def __init__(self, parent=None, children: list=(), upper_bound: float=0.0, lower_bound: float=0.0, action: str=None, belief_state=()):
+        super().__init__(parent, children, upper_bound, lower_bound, belief_state)
         self.action = action
         self.successors = []
 
@@ -501,3 +525,14 @@ class AND_Node(Node):
         """
         if self.parent is not None:
             self.depth = self.parent.depth
+
+    def __str__(self):
+        s = ['\nAND_Node.']
+        s.append('Belief state: {}'.format(self.belief_state))
+        s.append('Action: {}'.format(self.action))
+        s.append('Value: {}'.format(self.value()))
+        s.append('Upper Bound: {}'.format(self.upper_bound))
+        s.append('Lower Bound: {}'.format(self.lower_bound))
+        s.append('Parent: {}'.format(self.parent))
+        s.append('\n')
+        return '\n'.join(s)

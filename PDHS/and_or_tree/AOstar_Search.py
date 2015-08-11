@@ -19,7 +19,7 @@ class AOStarSearcher(object):
     def __init__(self, expand_heuristic):
         self.expand_heuristic = expand_heuristic
 
-    def forward_search(self, initial_belief_state: list, S: list, O: dict, T: dict, R: dict, V: LowerBound,
+    def forward_search(self, initial_belief_state: list, gamma:float, A: list, S: list, observations: list, O: dict, T: dict, R: dict, V: LowerBound,
                        upper_bound_function: UpperBound, stopping_function):
         """
         Using an initial belief state `initial_belief_state`, build and search an `AO_Tree` by repeatedly selecting a node
@@ -41,17 +41,21 @@ class AOStarSearcher(object):
         Returns:
             AO_Tree: The state of the AO_Tree when the stopping condition was met.
         """
-        tree = Tree(OR_Node(belief_state=initial_belief_state), upper_bound_function=upper_bound_function, lower_bound_function=V)
+        tree = Tree(OR_Node(belief_state=initial_belief_state), upper_bound_function=upper_bound_function, lower_bound_function=V, actions=A, observations=observations)
         # initialize tree's root's bounds
-        tree.update_lower_bound(tree.root, R=R, O=O, S=S, T=T)
-        tree.update_upper_bound(tree.root, R=R, O=O, S=S, T=T)
+        tree.update_lower_bound(tree.root, gamma=gamma, R=R, O=O, S=S, T=T)
+        # we must initialize root's initial lower bound and reach probability here
+        tree.root.initial_lower_bound = tree.root.lower_bound
+        tree.root.reach_probability = 1.0
+
+        tree.update_upper_bound(tree.root, gamma=gamma, R=R, O=O, S=S, T=T)
         print("Created initial tree with root: {}".format(tree.root))
         while not stopping_function.stop(tree):
             # select fringe node from tree using heuristic
             expand_node = self.expand_heuristic.select(tree.fringe) #TODO: In Ross, Pineau, et al., they calculate next heuristic in the expand function. Maybe it is more efficient that way?
             print("Running foward search... expanding node {}".format(expand_node))
-            tree.expand(expand_node, O, T, S, R=R)
-            print("Current size of tree: {}".format(tree.size()))
+            tree.expand(expand_node, gamma, O, T, S, R=R)
+            print("Current size of tree: {}\n".format(tree.size()))
             # propagate upper and lower bounds
 
         return tree

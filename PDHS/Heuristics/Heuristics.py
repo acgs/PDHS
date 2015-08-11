@@ -32,7 +32,7 @@ class HansenHeuristic(Heuristic):
     """
 
     def __init__(self, beta: float=0.0):
-        self.beta = beta
+        self.beta = float(beta)
 
     def select(self, nodes: list):
         r"""Select a `Node` from `nodes` using Hansen's Heuristic
@@ -48,6 +48,7 @@ class HansenHeuristic(Heuristic):
             OR_Node: The node whose belief state maximizes the above function.
         """
         selected_node = nodes[0]
+        print("In Hansen select. nodes: {}, initial selected node: {}".format(nodes, selected_node))
         """:type : OR_Node"""
         selected_value = ((selected_node.upper_bound - selected_node.value()) *
                           (selected_node.reach_probability * self.beta**selected_node.depth)

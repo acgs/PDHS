@@ -71,6 +71,7 @@ class ImprovableUpperBound(UpperBound):
     def improve(self):
         raise NotImplementedError("This Base class should be subclassed to be used.")
 
+
 class UB_MDP(ImprovableUpperBound):
     r"""Implement the upper bound as the value function of the underlying MDP for a given POMDP.
 
@@ -223,7 +224,7 @@ class UB_QMDP(ImprovableUpperBound):
         value = 0.0
         for a in self.A:
             value_sum = 0
-            for s_index in range(len(self.states)):
+            for s_index in range(len(self.S)):
                 value_sum += self.Q_MDP[a][s_index] * belief_state[s_index]
             if value_sum > value:
                 value = value_sum

@@ -14,7 +14,8 @@ def main(input_filename: str, verbose: bool):
     gtmodel = GTModel(input_filename)
     pomdp = POMDPModel(pseudo_pomdp_model=PseudoPOMDPModel(gt_model=gtmodel))
 
-    print("POMDP:\n{}".format(pomdp))
+    if verbose:
+        print("POMDP:\n{}".format(pomdp))
 
     # We'd like T to be a dictionary, not a list of tuples
     T = {}
@@ -28,12 +29,19 @@ def main(input_filename: str, verbose: bool):
     for (s_prime, (s, a), t) in pomdp.state_transition:
         T[s][a][s_prime] = float(t)
 
+    print("POMDP's state transition: {}".format('\n'.join([ '({}, ({}, {}), {})'.format(s_next, s, a, t) for (s_next, (s, a), t) in pomdp.state_transition])))
+    print("Created T -> mapping from state to action to next state to probability:")
+    for s in pomdp.states:
+        for a in pomdp.actions:
+            for s_prime in pomdp.states:
+                print("T[{}][{}][{}]: {}".format(s, a, s_prime, T[s][a][s_prime]))
+
     upper_bound = Bounds.UB_MDP(S=pomdp.states, A=pomdp.actions, T=T, R=pomdp.payoff, gamma=float(pomdp.discount))
 
     #train the upper bound before using it.
     train_upper_bound(upper_bound=upper_bound)
 
-    policy_driven_heuristic_search(pomdp=pomdp, beta=pomdp.discount,
+    policy_driven_heuristic_search(pomdp=pomdp, beta=pomdp.discount, observations=pomdp.observations, A=pomdp.actions,
                                    T=T, S=pomdp.states, O=pomdp.observation_probability,
                                    upper_bound=upper_bound, initial_belief_state=[1, 0, 0, 0])
 
@@ -52,13 +60,11 @@ def train_upper_bound(upper_bound: Bounds.ImprovableUpperBound, timeout: float=1
         old_value = upper_bound.value([1, 0, 0, 0])
         upper_bound.improve()
         new_value = upper_bound.value([1, 0, 0, 0])
-        print("Difference from old to new: {}".format(new_value-old_value))
-        print("New: {}".format(new_value))
         if upper_bound.is_converged:
             break
 
 
-def policy_driven_heuristic_search(pomdp, T, S, O, upper_bound: Bounds.UpperBound, initial_belief_state: list=[],
+def policy_driven_heuristic_search(pomdp, observations, A, T, S, O, upper_bound: Bounds.UpperBound, initial_belief_state: list=[],
                                    beta: float=0.0, epsilon: float=0.0):
     """Implement Hansen's heuristic search algorithm.
 
@@ -83,6 +89,11 @@ def policy_driven_heuristic_search(pomdp, T, S, O, upper_bound: Bounds.UpperBoun
     """
     P = pomdp.players[0]
 
+
+    print("Actions: {}".format(A))
+    print("Observations: {}".format(observations))
+    print("O: {}".format(O))
+
     searcher = AOstar_Search.AOStarSearcher(Heuristics.HansenHeuristic(beta=beta))
     exit_condition = tree_exit_condition(epsilon=epsilon)
 
@@ -94,8 +105,8 @@ def policy_driven_heuristic_search(pomdp, T, S, O, upper_bound: Bounds.UpperBoun
             V.from_Player(player=pomdp.players[0], pomdp=pomdp)
 
         # step 3. a)
-        tree = searcher.forward_search(initial_belief_state=initial_belief_state,
-                                       S=S, T=T, O=O, V=V,
+        tree = searcher.forward_search(initial_belief_state=initial_belief_state, gamma=beta, A=A,
+                                       S=S, observations=observations, T=T, O=O, V=V,
                                        upper_bound_function=upper_bound,
                                        R=pomdp.payoff, stopping_function=exit_condition)
         """:type : Tree"""
@@ -103,12 +114,14 @@ def policy_driven_heuristic_search(pomdp, T, S, O, upper_bound: Bounds.UpperBoun
         if tree.root.upper_bound - tree.root.lower_bound <= epsilon:
             break
 
+        for node in tree.fringe:
+            print(node)
+
         # step 3. c)
         tree_stack = [tree.root]
         tree_visited = []
         while len(tree_stack) is not 0:
             node = tree_stack.pop()
-            print(node)
             if node.lower_bound is not node.initial_lower_bound:
                 tree_visited.append(node)
             for child in node.children:
@@ -117,6 +130,9 @@ def policy_driven_heuristic_search(pomdp, T, S, O, upper_bound: Bounds.UpperBoun
         # order the nodes by depth
         sorted_nodes = sorted(tree_visited, key=_sort_by_depth)
 
+        print("Stopping loop. Tree's root: {}".format(tree.root))
+        print("Epsilon: {}".format(epsilon))
+        print("Reachable nodes whose values changed: {}".format(sorted_nodes))
         for node in sorted_nodes:
             # step 3. c) i
 
@@ -165,7 +181,11 @@ class tree_exit_condition(object):
         Returns:
             (bool): True if the stopping condition is met. False otherwise.
         """
-        if t.root.initial_lower_bound != t.root.lower_bound or t.root.upper_bound - t.root.lower_bound <= self.epsilon:
+        if t.root.initial_lower_bound != t.root.lower_bound:
+            print("Improved root's lower bound. Root initial bound: {}. Current bound: {}. Epsilon: {}".format(t.root.initial_lower_bound, t.root.lower_bound, self.epsilon))
+            return True
+        elif t.root.upper_bound - t.root.lower_bound <= self.epsilon:
+            print("Error bound converged to epsilon.")
             return True
         return False
 
