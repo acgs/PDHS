@@ -49,11 +49,12 @@ class AOStarSearcher(object):
         tree.root.reach_probability = 1.0
 
         tree.update_upper_bound(tree.root, gamma=gamma, R=R, O=O, S=S, T=T)
+        tree.root.initial_upper_bound = tree.root.upper_bound
         print("Created initial tree with root: {}".format(tree.root))
         while not stopping_function.stop(tree):
             # select fringe node from tree using heuristic
             expand_node = self.expand_heuristic.select(tree.fringe) #TODO: In Ross, Pineau, et al., they calculate next heuristic in the expand function. Maybe it is more efficient that way?
-            print("Running foward search... expanding node {}".format(expand_node))
+            #print("Running foward search... expanding node {}".format(expand_node))
             tree.expand(expand_node, gamma, O, T, S, R=R)
             print("Current size of tree: {}\n".format(tree.size()))
             # propagate upper and lower bounds

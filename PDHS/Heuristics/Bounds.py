@@ -51,12 +51,13 @@ class LBValueFunction(LowerBound, ValueFunction):
         value = 0.0
         for alpha in self.alpha_vectors:
             value_sum = 0
-            for s_index in range(len(self.states)):
+            for s_index in range(len(self.pomdp_states)):
                 value_sum += alpha[s_index] * belief_state[s_index]
             if value_sum > value:
                 value = value_sum
 
         return value
+
 
 
 class ImprovableUpperBound(UpperBound):
@@ -190,6 +191,8 @@ class UB_QMDP(ImprovableUpperBound):
         if len(self.Q_MDP) is 0:
             for a in self.A:
                 self.Q_MDP[a] = []
+                for s in self.S:
+                    self.Q_MDP[a].append(0)
 
     def improve(self):
         for s_index, s in enumerate(self.S):
@@ -263,13 +266,13 @@ class UB_FIB(ImprovableUpperBound):
     def improve(self):
         new_alphas = copy.copy(self.alphas)
         for a in self.A:
-            for s_index, s in self.S:
+            for s_index, s in enumerate(self.S):
                 z_sum = 0
                 for z in self.Z:
                     max_alpha_value = 0
                     inner_sum = 0
-                    for alpha in self.alphas:
-                        inner_sum = sum([self.O[s_prime][a][z] * self.T[s][a][s_prime]
+                    for action, alpha in self.alphas.items():
+                        inner_sum = sum([float(self.O[z][(a, s_prime)]) * float(self.T[s][a][s_prime])
                                          * alpha[s_prime_index] for s_prime_index, s_prime in enumerate(self.S)])
                         if inner_sum > max_alpha_value:
                             max_alpha_value = inner_sum

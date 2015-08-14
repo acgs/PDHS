@@ -82,6 +82,7 @@ class Tree(object):
             S (list[str]): The states of the POMDP.
             R (Dict[tuple[ACTION,STATE], float]): Mapping from action/state tuple to a payoff real value. Represents the immediate payoff of taking an action in a state.
         """
+        gamma = float(gamma)
         # First remove node from fringe.
         try:
             self.fringe.remove(node)
@@ -97,12 +98,16 @@ class Tree(object):
         and_children = []
         """:type : list[AND_Node]"""
 
+        print("Expanding OR_Node with belief state {}".format(node.belief_state))
+
         for action in self.actions:
+            print("Adding AND_Node with action {}".format(action))
             new_child = AND_Node(parent=node, action=action, belief_state=node.belief_state)
             and_children.append(new_child)
         # for each new AND_Node, create an OR_Node and compute its belief state according to:
         # b_t(s') = \tau(b_{t-1}, a_{t-1}, z_t)(s')
         for and_child in and_children: #iterate over all new AND_Nodes.
+            print("Expanding AND_Node with action {}".format(and_child.action))
             a = and_child.action
             for observation in self.observations:  # this generates each child of the and_child
                 new_belief_state = self.tau(belief_state=node.belief_state, action=a, observation=observation, O=O, T=T, S=S)
@@ -115,11 +120,11 @@ class Tree(object):
                 new_child = OR_Node(parent=and_child, belief_state=new_belief_state, obs_prob=obs_prob,
                                     reach_probability=reach_probability, lower_bound=self.L.value(new_belief_state),
                                     upper_bound=self.U.value(new_belief_state), observation=observation)
-
+                print("New OR_Node child with belief state: {}".format(new_child.belief_state))
                 self.fringe.append(new_child)
                 self.fringe_beliefs.append(new_child.belief_state)
-                print("New fringe: {}".format(self.fringe))
-                print("New fringe beliefs: {}".format(self.fringe_beliefs))
+                #print("New fringe: {}".format(self.fringe))
+                #print("New fringe beliefs: {}".format(self.fringe_beliefs))
 
         #We propagate after all children are created, so that we don't propagate information from fringe nodes that we only propagate once for each fringe node.
         fringe_upper_bounds = [n.upper_bound for n in self.fringe]
@@ -170,10 +175,12 @@ class Tree(object):
             T (dict[str, dict[str, dict[str, float]]]): The transition function that maps a state to an action to a state to a probability. Represents the conditional probability of transitioning from state s to s' given action a.
             S (list[str]): The states of the POMDP.
         """
-        if type(node) is OR_Node and node not in self.fringe:
+        if 'OR_Node' in str(type(node)) and node not in self.fringe:
+            print("Updating internal OR_Node lower bound as max of {}".format([child.lower_bound for child in node.children]))
             node.lower_bound = max([child.lower_bound for child in node.children])
         else:
-            node.lower_bound = self.bound_t(node.belief_state, gamma, R, O, T, S, self.L)
+            #node.lower_bound = self.bound_t(node.belief_state, gamma, R, O, T, S, self.L)
+            node.lower_bound = self.bound_t_new(node, gamma, R, O, T, S, self.L)
 
     def update_upper_bound(self, node, gamma, R, O, T, S):
         r"""Update the upper bound of `node`.
@@ -196,10 +203,64 @@ class Tree(object):
             S (list[str]): The states of the POMDP.
 
         """
-        if type(node) is OR_Node and node not in self.fringe:
+        if 'OR_Node' in str(type(node)) and node not in self.fringe:
+            print("Updating internal OR_Node upper bound as max of {}".format([child.upper_bound for child in node.children]))
             node.upper_bound = max([child.upper_bound for child in node.children])
         else:
-            node.upper_bound = self.bound_t(node.belief_state, gamma, R, O, T, S, self.U)
+            #node.upper_bound = self.bound_t(node.belief_state, gamma, R, O, T, S, self.U)
+            node.upper_bound = self.bound_t_new(node, gamma, R, O, T, S, self.U)
+
+
+    def bound_t_new(self, node, gamma, R, O, T, S, fringe_function: Bound):
+        """
+        Implement bound calculation relative to nodes.
+
+        In the usual calculation, we define:
+
+        Note:
+            :math:`B_T(b)` is implemented implicitly in the ``update_x_bound`` functions, so we just implement B_T(b,a) here.
+
+        .. math::
+            B_T(b) = \begin{cases}B(b), & \text{if } b \in F(T) \\ \text{max}_{a \in A} B_T(b,a), & \text{otherwise}\end{cases}
+
+            B_T(b,a) = R_B(b,a) + \gamma \sum_{z \in Z} \text{Pr}(z | b,a)B_T(\tau(b,a,z))
+
+        However, note that the belief of a node's child is exactly :math:`\tau(b,a,z)`
+        Thus, :math:`B_T(\tau(b,a,z))` is just a lookup of the bound for the zth child of this (AND) Node.
+
+        So, we'll implement B_T(b,a) as:
+
+        .. math::
+            B_T(node) = R_B(node.b,node.action) + \gamma \sum_{child \in node.children} \text{Pr}(child.observation | node.b,node.action)*child.bound
+
+        :param node:
+        :param gamma:
+        :param R:
+        :param O:
+        :param T:
+        :param S:
+        :param fringe_function:
+        :return:
+        """
+        if node in self.fringe:
+            return fringe_function.value(node.belief_state)
+
+        assert('AND_Node' in str(type(node)))
+        discounted_sum = 0
+        for child in node.children:
+            child_bound = 0
+            if isinstance(fringe_function, UpperBound):
+                child_bound = child.upper_bound
+            elif isinstance(fringe_function, LowerBound):
+                child_bound = child.lower_bound
+            else:
+                raise ValueError("fringe_function to bound_t_new is neither {} nor {}, but {}.".format(UpperBound, LowerBound, type(fringe_function)))
+            discounted_sum += self.pr_z(child.observation, node.belief_state, node.action, O, T, S) * child_bound
+        discounted_sum *= gamma
+        # We calculate R_B(belief_state, action) here, from R.
+        R_B = self.R_B(belief_state=node.belief_state, action=node.action, S=S, R=R)
+        return R_B + discounted_sum
+
 
     def bound_t(self, belief_state, gamma, R, O, T, S, fringe_function: Bound):
         """Abstract update to upper bound and lower bound.
@@ -229,7 +290,8 @@ class Tree(object):
                                             R=R, O=O, T=T, S=S, action=action, fringe_function=fringe_function)
                 if bound_t > new_bound:
                     new_bound = bound_t
-            return new_bound
+
+        return new_bound
 
     def bound_action(self, belief_state, gamma, R, O, T, S, action, fringe_function):
         r"""
@@ -454,10 +516,13 @@ class OR_Node(Node):
         belief_state (list[float]): the belief state of this node. len(`belief_state`) must be the same as the number of states in the POMDP.
         reach_probability (float): the probability that the `belief_state` of this OR_Node is reached from the initial belief state.
         obs_prob (float): the probability of the observation that gave rise to this OR_Node.
+
+    Attributes:
+        action Optional(str): the action that gave rise to this OR_Node (i.e. parent.action). `action` is None for the root OR_Node.
     """
 
     def __init__(self, parent: Node=None, children: list=(), upper_bound: float=0.0, lower_bound: float=0.0,
-                 belief_state: list=(), reach_probability: float=0.0, obs_prob: float=0.0, observation=None):
+                 belief_state: list=(), reach_probability: float=0.0, obs_prob: float=0.0, observation=None, action=None):
         super().__init__(parent, children, upper_bound, lower_bound, belief_state)
         self.reach_probability = reach_probability
         self.obs_prob = obs_prob
@@ -470,7 +535,7 @@ class OR_Node(Node):
     def _size(self):
         return sum([sys.getsizeof(elem) for elem in self.belief_state])
 
-    def _update_depth(self,):
+    def _update_depth(self):
         """Implement _update_depth as `parent.depth` +1.
 
         The depth of an OR Node is one more than its parent.

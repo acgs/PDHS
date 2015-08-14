@@ -58,15 +58,15 @@ class Player(object):
         payoff (Dict[Tuple[`ACTION`], Decimal]): mapping from sets of actions to a payoff - this is the immediate reward for this player given an action profile.
     """
 
-    def __init__(self, lines=None):
-        self.name = ""
-        self.states = []
-        self.actions = []
-        self.signals = []
-        self.state_machine = {}  # maps a state to an action
-        self.state_transitions = {}  # 2 level dictionary that maps a state to a signal to a state.
-        self.observation_marginal_distribution = {}  # 2 level dictionary that maps an action profile (set of actions) to observations (single element, in the case of 2 players) to probabilities.
-        self.payoff = {}  # maps a pair of actions to a payoff (real value). Not initialized by calling from_lines.
+    def __init__(self, name='', states=(), actions=(), signals=(), state_machine={}, state_transitions={}, observation_marginal_distribution={}, payoff={}, lines=None):
+        self.name = name
+        self.states = list(states)
+        self.actions = list(actions)
+        self.signals = list(signals)
+        self.state_machine = state_machine.copy()  # maps a state to an action
+        self.state_transitions = state_transitions.copy()  # 2 level dictionary that maps a state to a signal to a state.
+        self.observation_marginal_distribution = observation_marginal_distribution.copy()  # 2 level dictionary that maps an action profile (set of actions) to observations (single element, in the case of 2 players) to probabilities.
+        self.payoff = payoff.copy()  # maps a pair of actions to a payoff (real value). Not initialized by calling from_lines.
 
         if lines is not None:
             p = Player.from_lines(lines)
@@ -76,8 +76,35 @@ class Player(object):
             self.signals = p.signals
             self.state_machine = p.state_machine
             self.state_transitions = p.state_transitions
+            print("Successfully parsed player from lines:\n{}".format(self))
 
             # something else needs to fill in our observation_marginal_distribution, since we need the joint distribution.
+
+    def add_machine_state(self, state: str, action: str, transitions:dict):
+        """
+        Add a machine state with name `state`, associated action `action`, and transitions to other states `transitions` to this player.
+
+        Note:
+            This function does not check for duplicate states.
+
+        Args:
+            state (str): The name of the new state
+            action (str): The action to execute in the new state
+            transitions (dict[str, str]): Mapping from an observation to another state
+
+        """
+        self.states.append(state)
+        self.state_machine[state] = action
+        self.state_transitions[state] = transitions
+
+    def remove_machine_state(self, state: str):
+        if state in self.states:
+            self.states.remove(state)
+        if state in self.state_machine:
+            del self.state_machine[state]
+        if state in self.state_transitions:
+            del self.state_transitions[state]
+
 
     def build_marginal_distribution(self, joint_distribution, my_dimension: int):
         """Using a observation joint distribution table of probabilities, construct the marginal distribution for this player.
@@ -306,16 +333,60 @@ class ValueFunction(object):
     Attributes:
         alpha_vectors (list[list[float]]): a list of vectors representing the piecewise linear function of this Value Function.
         actions (list[str]): a list of actions that match each alpha vector in `alpha_vectors`.
+        pomdp_states (list[str]): a list of states of the pomdp this ValueFunction is defined for.
+        machine_states (list[str]): a list of machine states that correspond to each alpha vector.
 
+    .. Note:
+        machine_states may be empty if this ValueFunction does not map to a finite state controller.
     Preconditions:
         len(`alpha_vectors`) == len(`actions`)
+        len(`machine_states`) == 0 or len(`machine_states`) == len('alpha_vectors`)
 
     """
 
-    def __init__(self, alpha_vectors=[], actions=[], states=[]):
-        self.alpha_vectors = alpha_vectors
-        self.actions = actions
-        self.states = states
+    def __init__(self, alpha_vectors=(), actions=(), states=(), machine_states=()):
+        self.alpha_vectors = list(alpha_vectors)
+        self.actions = list(actions)
+        self.pomdp_states = list(states)
+        self.machine_states = list(machine_states)
+
+    def best_alpha_vector(self, belief_state: list):
+        """Return the alpha vector of this ValueFunction that maximizes the value at `belief_state`.
+        """
+        value = 0.0
+        best_alpha = None
+        for alpha in self.alpha_vectors:
+            value_sum = 0
+            for s_index in range(len(self.pomdp_states)):
+                value_sum += alpha[s_index] * belief_state[s_index]
+            if value_sum > value:
+                best_alpha = alpha
+                value = value_sum
+
+        return best_alpha
+
+    def value_at_state(self, state):
+        """
+        Return the value at a pomdp state (not belief_state)
+
+        This is just the value of the alpha vector that maximizes the value at state:
+
+        .. math::
+            max_{alpha \in alphas} alpha[state]
+
+        Args:
+            state (str): a POMDP state
+
+        Returns:
+            The value of this ValueFunction at `state`.
+        """
+        state_index = self.pomdp_states.index(state)
+        max_value = 0
+        for alpha in self.alpha_vectors:
+            if alpha[state_index] > max_value:
+                max_value = alpha[state_index]
+
+        return max_value
 
     def from_Player(self, player: Player, pomdp):
         """Build this Value Function from a `Player`'s automaton.
@@ -332,7 +403,8 @@ class ValueFunction(object):
         """
         K = np.array([k for k in player.state_machine.keys()], ndmin=1)
         S = pomdp.states
-        self.states = S
+        self.pomdp_states = S
+        self.machine_states = K
         """:type : list[str]"""
         A = np.array(pomdp.actions, ndmin=1)
 
@@ -529,6 +601,7 @@ class ValueFunction(object):
     def to_Player(self):
         """Construct a new Player from this Value Function.
         """
+        pass
 
 
 class GTModel(object):
@@ -616,6 +689,7 @@ class GTModel(object):
             self.players = model.players
             self.signal_distribution = model.signal_distribution
             self.payoff = model.payoff
+            print("Successfully parsed GTModel from file. player1: {}".format(self.players[0]))
 
     @staticmethod
     def from_file(filename):
@@ -675,9 +749,10 @@ class GTModel(object):
                         continue
                     elif len(line.strip()) is 0:
                         # build new player from collected strings and reset player_lines
-                        new_player = Player(player_lines)
+                        new_player = Player(lines=player_lines)
                         model.players.append(new_player)
                         player_lines = []
+                        print("Finished parsing a player. Player1: {}".format(model.players[0]))
                     else:
                         player_lines.append(line.rstrip().lstrip())
                 elif state is 6: #signal
@@ -690,7 +765,7 @@ class GTModel(object):
                         signal_lines = []
 
 
-                        #we want to reshape each matrix based on the signals/observations of each player.
+                        # we want to reshape each matrix based on the signals/observations of each player.
                         observation_sizes = [len(player.signals) for player in model.players]
 
                         for key in matrix:
@@ -716,9 +791,10 @@ class GTModel(object):
 
         #build each player's marginal distribution
 
+        print("Player1 before build_marginal_distribution: {}".format(model.players[0]))
         for dim, player in enumerate(model.players):
             player.build_marginal_distribution(model.signal_distribution, dim)
-
+        print("Player1 after build_marginal_distribution: {}".format(model.players[0]))
         return model
 
     @staticmethod
@@ -1013,6 +1089,8 @@ class PseudoPOMDPModel(object):
 
             self.payoff[(action, state)] = payoff
 
+        print("Finished PseudoPOMDP conversion from GTModel. Player1: {}".format(self.player1))
+
     def _calculate_expected_payoff(self) -> dict:
         """
         Computes the expected payoff function V_{θ_1,θ_2} for player 1
@@ -1153,10 +1231,12 @@ class POMDPModel(object):
         # is θ^t+1 when the current state is θ^t and the action of player 1 is a_1
         self.payoff = {}  # A function that maps an action/state tuple to a real value.
         self.players = []
+        self.player1 = None
         self.V = {} #  The Expected Payoff function for player1 in the POMDP - assuming other players use the same FSA.
 
         if pseudo_pomdp_model is not None:
             self.from_pseudo_pomdp(pseudo_pomdp_model)
+            print("Finished building POMDP from pseudo_pomdp_model. Player1: {}".format(self.player1))
 
     def from_pseudo_pomdp(self, pseudo_pomdp_model: PseudoPOMDPModel):
         """Converts `pseudo_pomdp_model` into this `POMDPModel`.
@@ -1172,6 +1252,7 @@ class POMDPModel(object):
         self.gt = pseudo_pomdp_model.gt
 
         self.players = pseudo_pomdp_model.players
+        self.player1 = pseudo_pomdp_model.player1
 
         # actions and observations are identical
         self.actions = pseudo_pomdp_model.actions
