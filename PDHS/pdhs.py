@@ -193,14 +193,20 @@ def policy_driven_heuristic_search(pomdp, observations, A, T, S, O, upper_bound:
             print("Iterating over node {}".format(node))
 
             #for each node, calculate the corresponding vector based on the current value function - Hansen 1998, pg. 217
+            node_alpha_vector = []
+            for s in pomdp.states:
+                sum_s = 0
+                for s_prime in pomdp.states:
+                    sum_s += T[s][node.action][s_prime] * V.value_at_state(state=s_prime)
 
+                node_alpha_vector.append(float(pomdp.payoff[(node.action, s)]) + float(beta) * sum_s)
 
             # calculate successor state from belief of each child of node
             successor_states = {}
             for child in node.children:
                 try:
-                    alpha_vector = V.best_alpha_vector(child.belief_state) # I think we have to use V_prime here, since we might update it every iteration
-                    successor_state = V_prime.machine_states[V.alpha_vectors.index(alpha_vector)]
+                    alpha_vector = V.best_alpha_vector(child.belief_state)
+                    successor_state = V.machine_states[V.alpha_vectors.index(alpha_vector)]
                     successor_states[child.observation] = successor_state
                 except ValueError:
                     continue
@@ -249,7 +255,6 @@ def policy_driven_heuristic_search(pomdp, observations, A, T, S, O, upper_bound:
                         sum_s += T[s][node.action][s_prime] * V.value_at_state(state=s_prime)
 
                     alpha_vector.append(float(pomdp.payoff[(node.action, s)]) + float(beta) * sum_s)
-                pass
 
                 # test for pointwise dominance of any alpha-vector in V
                 for old_alpha_vector in V.alpha_vectors:

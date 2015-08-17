@@ -119,7 +119,7 @@ class Tree(object):
 
                 new_child = OR_Node(parent=and_child, belief_state=new_belief_state, obs_prob=obs_prob,
                                     reach_probability=reach_probability, lower_bound=self.L.value(new_belief_state),
-                                    upper_bound=self.U.value(new_belief_state), observation=observation)
+                                    upper_bound=self.U.value(new_belief_state), observation=observation, action=a)
                 print("New OR_Node child with belief state: {}".format(new_child.belief_state))
                 self.fringe.append(new_child)
                 self.fringe_beliefs.append(new_child.belief_state)
